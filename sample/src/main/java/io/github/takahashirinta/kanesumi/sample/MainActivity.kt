@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -43,6 +44,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.takahashirinta.kanesumi.controls.MetroBottomSheet
 import io.github.takahashirinta.kanesumi.controls.MetroButton
 import io.github.takahashirinta.kanesumi.controls.MetroDialog
 import io.github.takahashirinta.kanesumi.controls.MetroDivider
@@ -107,11 +109,15 @@ private fun SampleRoot() {
     var selectedTab by remember { mutableIntStateOf(0) }
     var openedDetail by remember { mutableStateOf<DemoDetail?>(null) }
     var dialogOpen by remember { mutableStateOf(false) }
+    var sheetOpen by remember { mutableStateOf(false) }
 
     if (dialogOpen) {
         PlayAllStyleDialog(
             onDismiss = { dialogOpen = false },
         )
+    }
+    if (sheetOpen) {
+        SongMenuSheetStyleDemo(onDismiss = { sheetOpen = false })
     }
 
     MetroShell(
@@ -147,6 +153,7 @@ private fun SampleRoot() {
                     onToggleMiniBar = { miniBarVisible = !miniBarVisible },
                     onOpenDetail = { openedDetail = it },
                     onOpenDialog = { dialogOpen = true },
+                    onOpenSheet = { sheetOpen = true },
                 )
             }
         }
@@ -159,6 +166,7 @@ private fun HomeDemo(
     onToggleMiniBar: () -> Unit,
     onOpenDetail: (DemoDetail) -> Unit,
     onOpenDialog: () -> Unit,
+    onOpenSheet: () -> Unit,
 ) {
     val insets = rememberMetroInsets()
     LazyColumn(
@@ -203,6 +211,13 @@ private fun HomeDemo(
                     text = "Open dialog",
                     onClick = onOpenDialog,
                     modifier = Modifier.weight(1f),
+                )
+                MetroButton(
+                    text = "Open sheet",
+                    onClick = onOpenSheet,
+                    modifier = Modifier.weight(1f),
+                    containerColor = LocalMetroColors.current.surfaceVariant,
+                    contentColor = LocalMetroColors.current.onSurface,
                 )
                 Box(
                     modifier = Modifier
@@ -300,6 +315,80 @@ private fun PlayAllStyleDialog(onDismiss: () -> Unit) {
                 style = typography.body,
             )
         }
+    }
+}
+
+@Composable
+private fun SongMenuSheetStyleDemo(onDismiss: () -> Unit) {
+    val colors = LocalMetroColors.current
+    val typography = LocalMetroTypography.current
+    val song = remember {
+        DemoDetail("Album Alpha", "Artist One · 2024 · 12 tracks", DemoCoverA)
+    }
+    MetroBottomSheet(
+        onDismiss = onDismiss,
+        applyNavigationBarsPadding = true,
+        dragHandle = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(112.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    Modifier
+                        .size(112.dp)
+                        .background(song.cover)
+                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .weight(1f)
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    MetroText(
+                        text = song.title,
+                        color = colors.onSurface,
+                        style = typography.title,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    MetroText(
+                        text = song.subtitle,
+                        color = colors.primary,
+                        style = typography.caption,
+                    )
+                }
+            }
+        },
+    ) {
+        MetroDivider()
+        SheetAction(Icons.Filled.PlayArrow, "Play next", colors.primary, onDismiss)
+        MetroDivider()
+        SheetAction(Icons.Filled.Star, "Add to library", colors.onSurface, onDismiss)
+        MetroDivider()
+        SheetAction(Icons.Filled.Settings, "Share", colors.onSurface, onDismiss)
+    }
+}
+
+@Composable
+private fun SheetAction(
+    icon: ImageVector,
+    label: String,
+    tint: Color,
+    onDismiss: () -> Unit,
+) {
+    val typography = LocalMetroTypography.current
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onDismiss)
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        MetroIcon(imageVector = icon, contentDescription = null, tint = tint, sizeDp = 24.dp)
+        Spacer(Modifier.width(16.dp))
+        MetroText(text = label, color = LocalMetroColors.current.onSurface, style = typography.body)
     }
 }
 
