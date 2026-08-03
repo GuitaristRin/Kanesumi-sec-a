@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,8 +18,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.BasicText
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -37,9 +42,12 @@ import io.github.takahashirinta.kanesumi.core.insets.LocalMetroBottomStack
 import io.github.takahashirinta.kanesumi.core.insets.MetroBottomStackScope
 import io.github.takahashirinta.kanesumi.core.insets.MetroInsets
 import io.github.takahashirinta.kanesumi.core.insets.bottomOverlayPadding
+import io.github.takahashirinta.kanesumi.core.insets.metroNavigationBarsPadding
 import io.github.takahashirinta.kanesumi.core.insets.metroStatusBarsPadding
 import io.github.takahashirinta.kanesumi.core.insets.rememberBottomStackReservation
 import io.github.takahashirinta.kanesumi.core.insets.rememberMetroInsets
+import io.github.takahashirinta.kanesumi.structure.bottomnav.MetroBottomNav
+import io.github.takahashirinta.kanesumi.structure.bottomnav.MetroBottomNavItem
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,16 +65,23 @@ private val BgBlack = Color(0xFF000000)
 private val PanelInk = Color(0xFF0E1116)
 private val AccentBlue = Color(0xFF2E67B5)
 private val AccentTeal = Color(0xFF17A2A2)
+private val NavSurface = Color(0xFF0A0F16)
 private val TextPrimary = Color(0xFFF0F0F0)
 private val TextMuted = Color(0xFF9AA0A6)
+
+private val NavItems = listOf(
+    MetroBottomNavItem(Icons.Filled.Home, "home"),
+    MetroBottomNavItem(Icons.Filled.Search, "search"),
+    MetroBottomNavItem(Icons.Filled.Star, "star"),
+    MetroBottomNavItem(Icons.Filled.Settings, "settings"),
+)
 
 @Composable
 private fun SampleRoot() {
     var miniBarVisible by remember { mutableStateOf(false) }
+    var selectedTab by remember { mutableIntStateOf(0) }
 
-    // Structural elements register their heights into the bottom stack.
-    // Bottom nav is always present; mini bar is toggleable.
-    rememberBottomStackReservation(key = "sample.bottomNav", heightDp = 56.dp)
+    // MetroBottomNav auto-reserves 56dp; only mini bar needs manual reservation here.
     if (miniBarVisible) {
         rememberBottomStackReservation(key = "sample.miniPlayer", heightDp = 56.dp)
     }
@@ -76,7 +91,11 @@ private fun SampleRoot() {
             miniBarVisible = miniBarVisible,
             onToggleMiniBar = { miniBarVisible = !miniBarVisible },
         )
-        BottomOverlayStack(miniBarVisible = miniBarVisible)
+        BottomOverlayStack(
+            miniBarVisible = miniBarVisible,
+            selectedTab = selectedTab,
+            onTabSelected = { selectedTab = it },
+        )
     }
 }
 
@@ -114,7 +133,7 @@ private fun HeaderTitle() {
             .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
         BasicText(
-            text = "Kanesumi · MetroInsets demo",
+            text = "Kanesumi · MetroBottomNav demo",
             style = TextStyle(
                 color = TextPrimary,
                 fontSize = 22.sp,
@@ -179,14 +198,18 @@ private fun ListItem(index: Int) {
         contentAlignment = Alignment.CenterStart,
     ) {
         BasicText(
-            text = "Row $index — scroll to the bottom; last row must not be covered.",
+            text = "Row $index — scroll to the bottom; last row must clear both bars.",
             style = TextStyle(color = TextMuted, fontSize = 14.sp),
         )
     }
 }
 
 @Composable
-private fun BoxScope.BottomOverlayStack(miniBarVisible: Boolean) {
+private fun BoxScope.BottomOverlayStack(
+    miniBarVisible: Boolean,
+    selectedTab: Int,
+    onTabSelected: (Int) -> Unit,
+) {
     Column(
         modifier = Modifier
             .align(Alignment.BottomCenter)
@@ -195,7 +218,22 @@ private fun BoxScope.BottomOverlayStack(miniBarVisible: Boolean) {
         if (miniBarVisible) {
             OverlayBar(label = "mini player (56dp)", tint = AccentBlue)
         }
-        OverlayBar(label = "bottom nav (56dp)", tint = Color(0xFF16324F))
+        // Real MetroBottomNav — replaces the fake bottom-nav rect used before anim was ready.
+        // Wrap with metroNavigationBarsPadding so its 56dp visual bar sits above the system
+        // navigation bar (gesture pill / three-button). The library does not swallow this
+        // inset itself.
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(NavSurface)
+                .metroNavigationBarsPadding(),
+        ) {
+            MetroBottomNav(
+                items = NavItems,
+                selectedIndex = selectedTab,
+                onSelected = onTabSelected,
+            )
+        }
     }
 }
 

@@ -52,5 +52,9 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
 
+    // Icon vectors only — no Material theme / components.
+    // material-icons-core supplies ImageVectors accessed via Icons.*.
+    implementation("androidx.compose.material:material-icons-core:1.7.5")
+
     debugImplementation(libs.compose.ui.tooling)
 }
