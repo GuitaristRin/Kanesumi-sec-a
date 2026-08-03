@@ -7,7 +7,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -39,11 +38,9 @@ import io.github.takahashirinta.kanesumi.controls.MetroButton
 import io.github.takahashirinta.kanesumi.controls.MetroListRow
 import io.github.takahashirinta.kanesumi.controls.MetroSurface
 import io.github.takahashirinta.kanesumi.core.insets.LocalMetroBottomStack
-import io.github.takahashirinta.kanesumi.core.insets.MetroBottomStackScope
 import io.github.takahashirinta.kanesumi.core.insets.MetroInsets
 import io.github.takahashirinta.kanesumi.core.insets.bottomOverlayPadding
 import io.github.takahashirinta.kanesumi.core.insets.metroNavigationBarsPadding
-import io.github.takahashirinta.kanesumi.core.insets.metroStatusBarsPadding
 import io.github.takahashirinta.kanesumi.core.insets.rememberBottomStackReservation
 import io.github.takahashirinta.kanesumi.core.insets.rememberMetroInsets
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
@@ -51,6 +48,8 @@ import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
 import io.github.takahashirinta.kanesumi.core.theme.MetroIcon
 import io.github.takahashirinta.kanesumi.core.theme.MetroText
 import io.github.takahashirinta.kanesumi.core.theme.MetroTheme
+import io.github.takahashirinta.kanesumi.structure.MetroAppBar
+import io.github.takahashirinta.kanesumi.structure.MetroShell
 import io.github.takahashirinta.kanesumi.structure.bottomnav.MetroBottomNav
 import io.github.takahashirinta.kanesumi.structure.bottomnav.MetroBottomNavItem
 
@@ -60,9 +59,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MetroTheme {
-                MetroBottomStackScope {
-                    SampleRoot()
-                }
+                SampleRoot()
             }
         }
     }
@@ -82,65 +79,65 @@ private fun SampleRoot() {
     var miniBarVisible by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableIntStateOf(0) }
 
-    if (miniBarVisible) {
-        rememberBottomStackReservation(key = "sample.miniPlayer", heightDp = 56.dp)
-    }
-
-    val colors = LocalMetroColors.current
-    Box(Modifier.fillMaxSize().background(colors.background)) {
-        Content(
-            miniBarVisible = miniBarVisible,
-            onToggleMiniBar = { miniBarVisible = !miniBarVisible },
-        )
-        BottomOverlayStack(
-            miniBarVisible = miniBarVisible,
-            selectedTab = selectedTab,
-            onTabSelected = { selectedTab = it },
-        )
-    }
-}
-
-@Composable
-private fun Content(
-    miniBarVisible: Boolean,
-    onToggleMiniBar: () -> Unit,
-) {
-    val insets = rememberMetroInsets()
-    LazyColumn(
-        modifier = Modifier.fillMaxSize().metroStatusBarsPadding(),
-        contentPadding = bottomOverlayPadding(),
+    MetroShell(
+        bottomBar = {
+            Column {
+                if (miniBarVisible) OverlayBar(label = "mini player (56dp)", tint = DemoMiniBar)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(LocalMetroColors.current.surface)
+                        .metroNavigationBarsPadding(),
+                ) {
+                    MetroBottomNav(
+                        items = NavItems,
+                        selectedIndex = selectedTab,
+                        onSelected = { selectedTab = it },
+                    )
+                }
+            }
+        },
     ) {
-        item { HeaderTitle() }
-        item { DebugPanel(insets = insets) }
-        item { Spacer(Modifier.height(8.dp)) }
-        item {
-            MetroButton(
-                text = if (miniBarVisible) "Hide mini player" else "Show mini player",
-                onClick = onToggleMiniBar,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                leadingIcon = Icons.Filled.Star,
-            )
+        // MetroBottomStackScope is provided by MetroShell — this reservation goes into it.
+        if (miniBarVisible) {
+            rememberBottomStackReservation(key = "sample.miniPlayer", heightDp = 56.dp)
         }
-        item { Spacer(Modifier.height(8.dp)) }
-        items(80) { idx ->
-            SampleRow(index = idx)
-        }
-    }
-}
 
-@Composable
-private fun HeaderTitle() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-    ) {
-        MetroText(
-            text = "Kanesumi · controls demo",
-            style = LocalMetroTypography.current.title,
-        )
+        val insets = rememberMetroInsets()
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = bottomOverlayPadding(),
+        ) {
+            item {
+                MetroAppBar(
+                    title = "Kanesumi · shell demo",
+                    actions = {
+                        MetroIcon(
+                            imageVector = Icons.Filled.Settings,
+                            contentDescription = "settings",
+                            tint = LocalMetroColors.current.onSurfaceMuted,
+                            sizeDp = 22.dp,
+                        )
+                    },
+                )
+            }
+            item { DebugPanel(insets = insets) }
+            item { Spacer(Modifier.height(8.dp)) }
+            item {
+                MetroButton(
+                    text = if (miniBarVisible) "Hide mini player" else "Show mini player",
+                    onClick = { miniBarVisible = !miniBarVisible },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    leadingIcon = Icons.Filled.Star,
+                )
+            }
+            item { Spacer(Modifier.height(8.dp)) }
+            items(80) { idx ->
+                SampleRow(index = idx)
+            }
+        }
     }
 }
 
@@ -180,9 +177,8 @@ private fun SampleRow(index: Int) {
     val colors = LocalMetroColors.current
     MetroListRow(
         title = "Row $index",
-        subtitle = "scroll to the bottom; last row must clear both bars",
+        subtitle = "scroll to bottom; last row must clear both bars",
         leading = {
-            // 40dp square "cover" placeholder — Metro列表行的常见 leading。
             Box(
                 Modifier
                     .size(40.dp)
@@ -205,40 +201,8 @@ private fun SampleRow(index: Int) {
             )
         },
         onClick = {},
-        // leading 是 40dp,列表行贴左边缘,但我们用了 16dp start 让内容有呼吸,
-        // 展示"可覆盖 contentPadding"的用法(生产里也可传 0 让 leading 顶到屏幕边)。
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
     )
-}
-
-@Composable
-private fun BoxScope.BottomOverlayStack(
-    miniBarVisible: Boolean,
-    selectedTab: Int,
-    onTabSelected: (Int) -> Unit,
-) {
-    val colors = LocalMetroColors.current
-    Column(
-        modifier = Modifier
-            .align(Alignment.BottomCenter)
-            .fillMaxWidth(),
-    ) {
-        if (miniBarVisible) {
-            OverlayBar(label = "mini player (56dp)", tint = DemoMiniBar)
-        }
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(colors.surface)
-                .metroNavigationBarsPadding(),
-        ) {
-            MetroBottomNav(
-                items = NavItems,
-                selectedIndex = selectedTab,
-                onSelected = onTabSelected,
-            )
-        }
-    }
 }
 
 @Composable
