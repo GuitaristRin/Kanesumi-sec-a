@@ -63,7 +63,7 @@ fun MetroBottomNav(
     onSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
     activeColor: Color = LocalMetroColors.current.onSurface,
-    inactiveColor: Color = LocalMetroColors.current.onSurfaceMuted,
+    inactiveColor: Color = LocalMetroColors.current.onSurfaceVariant,
     indicatorColor: Color = LocalMetroColors.current.primary,
     indicatorSize: DpSize = DpSize(24.dp, 2.dp),
     heightDp: Dp = 56.dp,

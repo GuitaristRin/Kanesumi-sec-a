@@ -101,7 +101,7 @@ private fun LoadingSlot() {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         MetroText(
             text = "Loading…",
-            color = LocalMetroColors.current.onSurfaceMuted,
+            color = LocalMetroColors.current.onSurfaceVariant,
             style = LocalMetroTypography.current.body,
         )
     }

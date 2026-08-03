@@ -39,7 +39,7 @@ fun MetroListRow(
     leading: @Composable (() -> Unit)? = null,
     trailing: @Composable (() -> Unit)? = null,
     titleColor: Color = LocalMetroColors.current.onSurface,
-    subtitleColor: Color = LocalMetroColors.current.onSurfaceMuted,
+    subtitleColor: Color = LocalMetroColors.current.onSurfaceVariant,
     titleStyle: TextStyle = LocalMetroTypography.current.body,
     subtitleStyle: TextStyle = LocalMetroTypography.current.caption,
     contentPadding: PaddingValues = PaddingValues(start = 0.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),

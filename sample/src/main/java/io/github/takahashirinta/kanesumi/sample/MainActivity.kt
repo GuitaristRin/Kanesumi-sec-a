@@ -184,7 +184,7 @@ private fun HomeDemo(
                     MetroIcon(
                         imageVector = Icons.Filled.Settings,
                         contentDescription = "settings",
-                        tint = LocalMetroColors.current.onSurfaceMuted,
+                        tint = LocalMetroColors.current.onSurfaceVariant,
                         sizeDp = 22.dp,
                     )
                 },
@@ -287,7 +287,7 @@ private fun PlayAllStyleDialog(onDismiss: () -> Unit) {
         ) {
             MetroText(
                 text = "Choose how to play",
-                color = colors.onSurfaceMuted,
+                color = colors.onSurfaceVariant,
                 style = typography.caption,
             )
         }
@@ -317,7 +317,7 @@ private fun PlayAllStyleDialog(onDismiss: () -> Unit) {
         ) {
             MetroText(
                 text = "Cancel",
-                color = colors.onSurfaceMuted,
+                color = colors.onSurfaceVariant,
                 style = typography.body,
             )
         }
@@ -352,7 +352,7 @@ private fun FormControlsShowcase() {
                 MetroText(text = "Auto-play", color = colors.onSurface, style = typography.body)
                 MetroText(
                     text = "Start playing when tapped",
-                    color = colors.onSurfaceMuted,
+                    color = colors.onSurfaceVariant,
                     style = typography.caption,
                 )
             }
@@ -520,7 +520,7 @@ private fun DialogRow(
         Spacer(Modifier.width(16.dp))
         Column {
             MetroText(text = title, color = LocalMetroColors.current.onSurface, style = typography.body)
-            MetroText(text = subtitle, color = LocalMetroColors.current.onSurfaceMuted, style = typography.caption)
+            MetroText(text = subtitle, color = LocalMetroColors.current.onSurfaceVariant, style = typography.caption)
         }
     }
 }
@@ -593,7 +593,7 @@ private fun DebugPanel(insets: MetroInsets) {
             Spacer(Modifier.height(6.dp))
             MetroText(text = "Bottom stack (total ${fmt(stack.totalHeightDp)})", style = typography.caption)
             stack.reservationsByKey.forEach { (k, v) ->
-                MetroText("  $k  →  ${fmt(v)}", style = mono, color = colors.onSurfaceMuted)
+                MetroText("  $k  →  ${fmt(v)}", style = mono, color = colors.onSurfaceVariant)
             }
         }
     }

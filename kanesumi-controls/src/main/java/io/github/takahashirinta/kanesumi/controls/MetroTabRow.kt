@@ -44,7 +44,7 @@ data class MetroTabItem(
  * (MetroCubic 200ms),不闪切 -- 这是 UWP Pivot 的签名动作,NcrustTabRow
  * 用"每 tab 一条 + 硬切"顶替,呆板感来源之一。库版改成全局单条滑动。
  *
- * 文字颜色:选中态 primary Medium 14sp,未选中 onSurfaceMuted Regular 14sp,
+ * 文字颜色:选中态 primary Medium 14sp,未选中 onSurfaceVariant Regular 14sp,
  * 两层堆叠 + graphicsLayer alpha 插值 (MetroCubic 180ms),零重组。
  *
  * 高度默认 48dp(与 M3 Tab 一致,不破坏现有布局)。无 ripple、无下划线背板。
@@ -56,7 +56,7 @@ fun MetroTabRow(
     onTabSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
     activeColor: Color = LocalMetroColors.current.primary,
-    inactiveColor: Color = LocalMetroColors.current.onSurfaceMuted,
+    inactiveColor: Color = LocalMetroColors.current.onSurfaceVariant,
     indicatorColor: Color = LocalMetroColors.current.primary,
     heightDp: Dp = 48.dp,
     textStyle: TextStyle = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Normal),

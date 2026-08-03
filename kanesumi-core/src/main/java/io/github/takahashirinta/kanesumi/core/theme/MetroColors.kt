@@ -13,6 +13,6 @@ data class MetroColors(
     val onPrimary: Color = Color(0xFFFFFFFF),
     val onBackground: Color = Color(0xFFF0F0F0),
     val onSurface: Color = Color(0xFFF0F0F0),
-    val onSurfaceMuted: Color = Color(0xFF9AA0A6),
+    val onSurfaceVariant: Color = Color(0xFF9AA0A6),
     val pressTint: Color = Color(0x22FFFFFF),
 )
