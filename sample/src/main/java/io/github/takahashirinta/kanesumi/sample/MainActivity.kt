@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.text.BasicText
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
@@ -32,12 +31,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import io.github.takahashirinta.kanesumi.core.insets.LocalMetroBottomStack
 import io.github.takahashirinta.kanesumi.core.insets.MetroBottomStackScope
 import io.github.takahashirinta.kanesumi.core.insets.MetroInsets
@@ -46,6 +42,10 @@ import io.github.takahashirinta.kanesumi.core.insets.metroNavigationBarsPadding
 import io.github.takahashirinta.kanesumi.core.insets.metroStatusBarsPadding
 import io.github.takahashirinta.kanesumi.core.insets.rememberBottomStackReservation
 import io.github.takahashirinta.kanesumi.core.insets.rememberMetroInsets
+import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
+import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
+import io.github.takahashirinta.kanesumi.core.theme.MetroText
+import io.github.takahashirinta.kanesumi.core.theme.MetroTheme
 import io.github.takahashirinta.kanesumi.structure.bottomnav.MetroBottomNav
 import io.github.takahashirinta.kanesumi.structure.bottomnav.MetroBottomNavItem
 
@@ -54,20 +54,19 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MetroBottomStackScope {
-                SampleRoot()
+            MetroTheme {
+                MetroBottomStackScope {
+                    SampleRoot()
+                }
             }
         }
     }
 }
 
-private val BgBlack = Color(0xFF000000)
-private val PanelInk = Color(0xFF0E1116)
-private val AccentBlue = Color(0xFF2E67B5)
-private val AccentTeal = Color(0xFF17A2A2)
-private val NavSurface = Color(0xFF0A0F16)
-private val TextPrimary = Color(0xFFF0F0F0)
-private val TextMuted = Color(0xFF9AA0A6)
+// Sample-specific accent colours. These are demo highlights (blue mini bar,
+// teal toggle) that don't correspond to theme roles.
+private val DemoMiniBar = Color(0xFF2E67B5)
+private val DemoToggle = Color(0xFF17A2A2)
 
 private val NavItems = listOf(
     MetroBottomNavItem(Icons.Filled.Home, "home"),
@@ -81,12 +80,12 @@ private fun SampleRoot() {
     var miniBarVisible by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableIntStateOf(0) }
 
-    // MetroBottomNav auto-reserves 56dp; only mini bar needs manual reservation here.
     if (miniBarVisible) {
         rememberBottomStackReservation(key = "sample.miniPlayer", heightDp = 56.dp)
     }
 
-    Box(Modifier.fillMaxSize().background(BgBlack)) {
+    val colors = LocalMetroColors.current
+    Box(Modifier.fillMaxSize().background(colors.background)) {
         Content(
             miniBarVisible = miniBarVisible,
             onToggleMiniBar = { miniBarVisible = !miniBarVisible },
@@ -132,13 +131,9 @@ private fun HeaderTitle() {
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
-        BasicText(
-            text = "Kanesumi · MetroBottomNav demo",
-            style = TextStyle(
-                color = TextPrimary,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Normal,
-            ),
+        MetroText(
+            text = "Kanesumi · MetroTheme demo",
+            style = LocalMetroTypography.current.title,
         )
     }
 }
@@ -146,23 +141,27 @@ private fun HeaderTitle() {
 @Composable
 private fun DebugPanel(insets: MetroInsets) {
     val stack = LocalMetroBottomStack.current
+    val colors = LocalMetroColors.current
+    val typography = LocalMetroTypography.current
+    val mono = typography.caption.copy(fontFamily = FontFamily.Monospace)
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
-            .background(PanelInk)
+            .background(colors.surfaceVariant)
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Line("System insets", bold = true)
-        Line("  statusBar.top    = ${fmt(insets.statusBar.dp)}  (${"%.1f".format(insets.statusBar.px)} px)")
-        Line("  navigationBar    = ${fmt(insets.navigationBar.dp)}  (${"%.1f".format(insets.navigationBar.px)} px)")
-        Line("  displayCutout.T  = ${fmt(insets.displayCutout.top.dp)}")
-        Line("  ime.bottom       = ${fmt(insets.ime.dp)}")
+        MetroText(text = "System insets", style = typography.caption)
+        MetroText(text = "  statusBar.top    = ${fmt(insets.statusBar.dp)}  (${"%.1f".format(insets.statusBar.px)} px)", style = mono, color = colors.onSurface)
+        MetroText(text = "  navigationBar    = ${fmt(insets.navigationBar.dp)}  (${"%.1f".format(insets.navigationBar.px)} px)", style = mono, color = colors.onSurface)
+        MetroText(text = "  displayCutout.T  = ${fmt(insets.displayCutout.top.dp)}", style = mono, color = colors.onSurface)
+        MetroText(text = "  ime.bottom       = ${fmt(insets.ime.dp)}", style = mono, color = colors.onSurface)
         Spacer(Modifier.height(6.dp))
-        Line("Bottom stack (total ${fmt(stack.totalHeightDp)})", bold = true)
+        MetroText(text = "Bottom stack (total ${fmt(stack.totalHeightDp)})", style = typography.caption)
         stack.reservationsByKey.forEach { (k, v) ->
-            Line("  $k  →  ${fmt(v)}", muted = true)
+            MetroText(text = "  $k  →  ${fmt(v)}", style = mono, color = colors.onSurfaceMuted)
         }
     }
 }
@@ -173,17 +172,14 @@ private fun ToggleRow(label: String, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
-            .background(AccentTeal)
+            .background(DemoToggle)
             .clickable(onClick = onClick)
             .padding(vertical = 14.dp, horizontal = 16.dp),
     ) {
-        BasicText(
+        MetroText(
             text = label,
-            style = TextStyle(
-                color = TextPrimary,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Normal,
-            ),
+            color = LocalMetroColors.current.onSurface,
+            style = LocalMetroTypography.current.body,
         )
     }
 }
@@ -197,9 +193,10 @@ private fun ListItem(index: Int) {
             .padding(horizontal = 16.dp),
         contentAlignment = Alignment.CenterStart,
     ) {
-        BasicText(
+        MetroText(
             text = "Row $index — scroll to the bottom; last row must clear both bars.",
-            style = TextStyle(color = TextMuted, fontSize = 14.sp),
+            color = LocalMetroColors.current.onSurfaceMuted,
+            style = LocalMetroTypography.current.body,
         )
     }
 }
@@ -210,22 +207,19 @@ private fun BoxScope.BottomOverlayStack(
     selectedTab: Int,
     onTabSelected: (Int) -> Unit,
 ) {
+    val colors = LocalMetroColors.current
     Column(
         modifier = Modifier
             .align(Alignment.BottomCenter)
             .fillMaxWidth(),
     ) {
         if (miniBarVisible) {
-            OverlayBar(label = "mini player (56dp)", tint = AccentBlue)
+            OverlayBar(label = "mini player (56dp)", tint = DemoMiniBar)
         }
-        // Real MetroBottomNav — replaces the fake bottom-nav rect used before anim was ready.
-        // Wrap with metroNavigationBarsPadding so its 56dp visual bar sits above the system
-        // navigation bar (gesture pill / three-button). The library does not swallow this
-        // inset itself.
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(NavSurface)
+                .background(colors.surface)
                 .metroNavigationBarsPadding(),
         ) {
             MetroBottomNav(
@@ -246,24 +240,12 @@ private fun OverlayBar(label: String, tint: Color) {
             .background(tint),
         contentAlignment = Alignment.Center,
     ) {
-        BasicText(
+        MetroText(
             text = label,
-            style = TextStyle(color = TextPrimary, fontSize = 13.sp),
+            color = LocalMetroColors.current.onSurface,
+            style = LocalMetroTypography.current.caption,
         )
     }
-}
-
-@Composable
-private fun Line(text: String, bold: Boolean = false, muted: Boolean = false) {
-    BasicText(
-        text = text,
-        style = TextStyle(
-            color = if (muted) TextMuted else TextPrimary,
-            fontSize = 13.sp,
-            fontWeight = if (bold) FontWeight.SemiBold else FontWeight.Normal,
-            fontFamily = FontFamily.Monospace,
-        ),
-    )
 }
 
 private fun fmt(dp: Dp): String = "${dp.value.toInt()}dp"

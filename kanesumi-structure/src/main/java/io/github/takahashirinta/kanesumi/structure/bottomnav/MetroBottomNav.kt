@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
@@ -28,17 +27,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import io.github.takahashirinta.kanesumi.anim.sokuou.MetroCubic
 import io.github.takahashirinta.kanesumi.core.insets.rememberBottomStackReservation
+import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
+import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
+import io.github.takahashirinta.kanesumi.core.theme.MetroIcon
+import io.github.takahashirinta.kanesumi.core.theme.MetroText
 
 @Immutable
 data class MetroBottomNavItem(
@@ -54,9 +55,9 @@ data class MetroBottomNavItem(
  * - 选中/未选中颜色以叠层 alpha 插值 (MetroCubic 180ms)
  * - 按下时直角矩形闪切 (100ms 淡入 / 200ms 淡出),无 ripple 无圆角
  *
- * 默认自动登记进 MetroBottomStack,内容侧一句 metroBottomOverlayPadding()
- * 即避开。系统导航栏 padding 不代管 —— 调用方在外层套
- * .metroNavigationBarsPadding() 保持可控。
+ * 默认颜色从 LocalMetroColors 取。默认自动登记进 MetroBottomStack,
+ * 内容侧一句 bottomOverlayPadding() 即避开。系统导航栏 padding 不代管
+ * —— 调用方在外层套 .metroNavigationBarsPadding() 保持可控。
  */
 @Composable
 fun MetroBottomNav(
@@ -64,9 +65,10 @@ fun MetroBottomNav(
     selectedIndex: Int,
     onSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    activeColor: Color = Color(0xFFE6E6E6),
-    inactiveColor: Color = Color(0xFF7A7A7A),
-    pressTint: Color = Color(0x22FFFFFF),
+    activeColor: Color = LocalMetroColors.current.onSurface,
+    inactiveColor: Color = LocalMetroColors.current.onSurfaceMuted,
+    pressTint: Color = LocalMetroColors.current.pressTint,
+    indicatorColor: Color = LocalMetroColors.current.primary,
     indicatorSize: DpSize = DpSize(24.dp, 2.dp),
     heightDp: Dp = 56.dp,
     autoReserveBottomStack: Boolean = true,
@@ -115,7 +117,7 @@ fun MetroBottomNav(
                 .graphicsLayer {
                     translationX = indicatorProgress.value * tabWidthPx + indicatorLeftInTabPx
                 }
-                .background(activeColor),
+                .background(indicatorColor),
         )
     }
 }
@@ -150,7 +152,7 @@ private fun RowScope.MetroBottomNavTab(
         }
     }
 
-    val iconPainter = rememberVectorPainter(item.icon)
+    val labelStyle = LocalMetroTypography.current.label
 
     Box(
         modifier = Modifier
@@ -163,6 +165,9 @@ private fun RowScope.MetroBottomNavTab(
             )
             .drawBehind {
                 drawRect(color = pressTint, alpha = pressProgress.value)
+            }
+            .semantics {
+                contentDescription = item.label
             },
         contentAlignment = Alignment.Center,
     ) {
@@ -170,74 +175,37 @@ private fun RowScope.MetroBottomNavTab(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            TintedIconLayer(
-                painter = iconPainter,
-                inactiveColor = inactiveColor,
-                activeColor = activeColor,
-                selectionAlpha = { selectionProgress.value },
-            )
+            // Icon stack: inactive layer always fully visible; active layer alpha driven
+            // by selectionProgress in graphicsLayer → color interp with zero recomposition.
+            Box(contentAlignment = Alignment.Center) {
+                MetroIcon(
+                    imageVector = item.icon,
+                    contentDescription = null,
+                    tint = inactiveColor,
+                    sizeDp = 22.dp,
+                )
+                MetroIcon(
+                    imageVector = item.icon,
+                    contentDescription = null,
+                    tint = activeColor,
+                    sizeDp = 22.dp,
+                    modifier = Modifier.graphicsLayer { alpha = selectionProgress.value },
+                )
+            }
             Spacer(Modifier.height(2.dp))
-            TintedLabelLayer(
-                text = item.label,
-                inactiveColor = inactiveColor,
-                activeColor = activeColor,
-                selectionAlpha = { selectionProgress.value },
-            )
+            Box {
+                MetroText(
+                    text = item.label,
+                    color = inactiveColor,
+                    style = labelStyle,
+                )
+                MetroText(
+                    text = item.label,
+                    color = activeColor,
+                    style = labelStyle,
+                    modifier = Modifier.graphicsLayer { alpha = selectionProgress.value },
+                )
+            }
         }
-    }
-}
-
-/**
- * Two stacked icons — inactive fully opaque, active on top with alpha driven by
- * [selectionAlpha] read inside graphicsLayer. Achieves color interpolation without
- * recomposing the composition tree.
- */
-@Composable
-private fun TintedIconLayer(
-    painter: Painter,
-    inactiveColor: Color,
-    activeColor: Color,
-    selectionAlpha: () -> Float,
-) {
-    Box(Modifier.size(22.dp), contentAlignment = Alignment.Center) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .drawBehind {
-                    with(painter) {
-                        draw(size = this@drawBehind.size, colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(inactiveColor))
-                    }
-                }
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer { alpha = selectionAlpha() }
-                .drawBehind {
-                    with(painter) {
-                        draw(size = this@drawBehind.size, colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(activeColor))
-                    }
-                }
-        )
-    }
-}
-
-@Composable
-private fun TintedLabelLayer(
-    text: String,
-    inactiveColor: Color,
-    activeColor: Color,
-    selectionAlpha: () -> Float,
-) {
-    Box {
-        BasicText(
-            text = text,
-            style = TextStyle(color = inactiveColor, fontSize = 11.sp, lineHeight = 12.sp),
-        )
-        BasicText(
-            text = text,
-            style = TextStyle(color = activeColor, fontSize = 11.sp, lineHeight = 12.sp),
-            modifier = Modifier.graphicsLayer { alpha = selectionAlpha() },
-        )
     }
 }
