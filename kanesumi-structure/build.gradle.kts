@@ -30,6 +30,9 @@ android {
 dependencies {
     api(project(":kanesumi-core"))
     api(project(":kanesumi-anim"))
+    // structure (chrome / scaffold) consumes controls (widgets) —— error/empty states
+    // want buttons, scaffolds use surfaces, etc. Direction stays acyclic.
+    api(project(":kanesumi-controls"))
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.foundation)
     implementation(libs.compose.ui)

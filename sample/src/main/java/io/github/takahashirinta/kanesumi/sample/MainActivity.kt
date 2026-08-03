@@ -10,14 +10,17 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -34,8 +37,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import io.github.takahashirinta.kanesumi.controls.MetroButton
 import io.github.takahashirinta.kanesumi.controls.MetroListRow
+import io.github.takahashirinta.kanesumi.controls.MetroResponsiveContent
 import io.github.takahashirinta.kanesumi.controls.MetroSurface
 import io.github.takahashirinta.kanesumi.core.insets.LocalMetroBottomStack
 import io.github.takahashirinta.kanesumi.core.insets.MetroInsets
@@ -49,6 +54,7 @@ import io.github.takahashirinta.kanesumi.core.theme.MetroIcon
 import io.github.takahashirinta.kanesumi.core.theme.MetroText
 import io.github.takahashirinta.kanesumi.core.theme.MetroTheme
 import io.github.takahashirinta.kanesumi.structure.MetroAppBar
+import io.github.takahashirinta.kanesumi.structure.MetroDetailScaffold
 import io.github.takahashirinta.kanesumi.structure.MetroShell
 import io.github.takahashirinta.kanesumi.structure.bottomnav.MetroBottomNav
 import io.github.takahashirinta.kanesumi.structure.bottomnav.MetroBottomNavItem
@@ -66,6 +72,9 @@ class MainActivity : ComponentActivity() {
 }
 
 private val DemoMiniBar = Color(0xFF2E67B5)
+private val DemoCoverA = Color(0xFF6B4E9E)
+private val DemoCoverB = Color(0xFFB57332)
+private val DemoCoverC = Color(0xFF3E7C51)
 
 private val NavItems = listOf(
     MetroBottomNavItem(Icons.Filled.Home, "home"),
@@ -74,10 +83,19 @@ private val NavItems = listOf(
     MetroBottomNavItem(Icons.Filled.Settings, "settings"),
 )
 
+private data class DemoDetail(val title: String, val subtitle: String, val cover: Color)
+
+private val DemoDetails = listOf(
+    DemoDetail("Album Alpha", "Artist One · 2024 · 12 tracks", DemoCoverA),
+    DemoDetail("Album Beta", "Artist Two · 2023 · 9 tracks", DemoCoverB),
+    DemoDetail("Album Gamma", "Artist Three · 2025 · 15 tracks", DemoCoverC),
+)
+
 @Composable
 private fun SampleRoot() {
     var miniBarVisible by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableIntStateOf(0) }
+    var openedDetail by remember { mutableStateOf<DemoDetail?>(null) }
 
     MetroShell(
         bottomBar = {
@@ -98,46 +116,142 @@ private fun SampleRoot() {
             }
         },
     ) {
-        // MetroBottomStackScope is provided by MetroShell — this reservation goes into it.
         if (miniBarVisible) {
             rememberBottomStackReservation(key = "sample.miniPlayer", heightDp = 56.dp)
         }
 
-        val insets = rememberMetroInsets()
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = bottomOverlayPadding(),
-        ) {
-            item {
-                MetroAppBar(
-                    title = "Kanesumi · shell demo",
-                    actions = {
-                        MetroIcon(
-                            imageVector = Icons.Filled.Settings,
-                            contentDescription = "settings",
-                            tint = LocalMetroColors.current.onSurfaceMuted,
-                            sizeDp = 22.dp,
-                        )
-                    },
+        MetroResponsiveContent {
+            val current = openedDetail
+            if (current != null) {
+                DetailDemo(detail = current, onBack = { openedDetail = null })
+            } else {
+                HomeDemo(
+                    miniBarVisible = miniBarVisible,
+                    onToggleMiniBar = { miniBarVisible = !miniBarVisible },
+                    onOpenDetail = { openedDetail = it },
                 )
-            }
-            item { DebugPanel(insets = insets) }
-            item { Spacer(Modifier.height(8.dp)) }
-            item {
-                MetroButton(
-                    text = if (miniBarVisible) "Hide mini player" else "Show mini player",
-                    onClick = { miniBarVisible = !miniBarVisible },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    leadingIcon = Icons.Filled.Star,
-                )
-            }
-            item { Spacer(Modifier.height(8.dp)) }
-            items(80) { idx ->
-                SampleRow(index = idx)
             }
         }
+    }
+}
+
+@Composable
+private fun HomeDemo(
+    miniBarVisible: Boolean,
+    onToggleMiniBar: () -> Unit,
+    onOpenDetail: (DemoDetail) -> Unit,
+) {
+    val insets = rememberMetroInsets()
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = bottomOverlayPadding(),
+    ) {
+        item {
+            MetroAppBar(
+                title = "Kanesumi · demo",
+                actions = {
+                    MetroIcon(
+                        imageVector = Icons.Filled.Settings,
+                        contentDescription = "settings",
+                        tint = LocalMetroColors.current.onSurfaceMuted,
+                        sizeDp = 22.dp,
+                    )
+                },
+            )
+        }
+        item { DebugPanel(insets = insets) }
+        item { Spacer(Modifier.height(8.dp)) }
+        item {
+            MetroButton(
+                text = if (miniBarVisible) "Hide mini player" else "Show mini player",
+                onClick = onToggleMiniBar,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                leadingIcon = Icons.Filled.Star,
+            )
+        }
+        item { Spacer(Modifier.height(16.dp)) }
+        item {
+            MetroText(
+                text = "Details",
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                style = LocalMetroTypography.current.title,
+            )
+        }
+        items(DemoDetails) { detail ->
+            MetroListRow(
+                title = detail.title,
+                subtitle = detail.subtitle,
+                leading = {
+                    Box(
+                        Modifier
+                            .size(48.dp)
+                            .background(detail.cover)
+                    )
+                },
+                onClick = { onOpenDetail(detail) },
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+            )
+        }
+        item { Spacer(Modifier.height(16.dp)) }
+        items(60) { idx ->
+            SimpleRow(index = idx)
+        }
+    }
+}
+
+@Composable
+private fun DetailDemo(detail: DemoDetail, onBack: () -> Unit) {
+    MetroDetailScaffold(
+        onBack = onBack,
+        backIcon = Icons.Filled.ArrowBack,
+        header = { DetailHeader(detail) },
+        content = { detailBody() },
+    )
+}
+
+@Composable
+private fun DetailHeader(detail: DemoDetail) {
+    val colors = LocalMetroColors.current
+    val typography = LocalMetroTypography.current
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .aspectRatio(1f)
+                .background(detail.cover)
+        )
+        Spacer(Modifier.height(20.dp))
+        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+            MetroText(text = detail.title, color = colors.onBackground, style = typography.pageHeading.copy(fontSize = 26.sp))
+            Spacer(Modifier.height(6.dp))
+            MetroText(text = detail.subtitle, color = colors.primary, style = typography.caption)
+        }
+        Spacer(Modifier.height(16.dp))
+    }
+}
+
+private fun LazyListScope.detailBody() {
+    items(20) { i ->
+        MetroListRow(
+            title = "Track ${i + 1}",
+            subtitle = "3:${(15 + i * 7) % 60}",
+            leading = {
+                MetroText(
+                    text = "%02d".format(i + 1),
+                    modifier = Modifier.padding(start = 16.dp),
+                )
+            },
+            trailing = {
+                MetroIcon(
+                    imageVector = Icons.Filled.Star,
+                    contentDescription = null,
+                    sizeDp = 20.dp,
+                )
+            },
+            onClick = {},
+        )
     }
 }
 
@@ -173,35 +287,11 @@ private fun DebugPanel(insets: MetroInsets) {
 }
 
 @Composable
-private fun SampleRow(index: Int) {
-    val colors = LocalMetroColors.current
+private fun SimpleRow(index: Int) {
     MetroListRow(
         title = "Row $index",
         subtitle = "scroll to bottom; last row must clear both bars",
-        leading = {
-            Box(
-                Modifier
-                    .size(40.dp)
-                    .background(colors.surfaceVariant),
-                contentAlignment = Alignment.Center,
-            ) {
-                MetroText(
-                    text = "%02d".format(index),
-                    color = colors.onSurfaceMuted,
-                    style = LocalMetroTypography.current.label,
-                )
-            }
-        },
-        trailing = {
-            MetroIcon(
-                imageVector = Icons.Filled.Star,
-                contentDescription = null,
-                tint = colors.onSurfaceMuted,
-                sizeDp = 20.dp,
-            )
-        },
-        onClick = {},
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
     )
 }
 
