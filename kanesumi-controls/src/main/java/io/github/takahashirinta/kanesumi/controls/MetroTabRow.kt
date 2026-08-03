@@ -132,7 +132,9 @@ private fun RowScope.MetroTabRowTab(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top,
     ) {
-        Spacer(Modifier.height(2.dp))
+        // 2dp 跳过指示条自身厚度 + 12dp 呼吸 —— 否则文字紧贴指示条下沿,视觉挤。
+        // 数值对齐 NcrustTabRow / UWP Pivot 手感,不做参数化(没有真实用例驱动)。
+        Spacer(Modifier.height(14.dp))
         Box(contentAlignment = Alignment.Center) {
             MetroText(text = title, color = inactiveColor, style = textStyle)
             MetroText(
