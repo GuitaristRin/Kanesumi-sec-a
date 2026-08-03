@@ -9,6 +9,7 @@ data class MetroColors(
     val surface: Color = Color(0xFF0A0F16),
     val surfaceVariant: Color = Color(0xFF14181F),
     val primary: Color = Color(0xFF2E67B5),
+    val onPrimary: Color = Color(0xFFFFFFFF),
     val onBackground: Color = Color(0xFFF0F0F0),
     val onSurface: Color = Color(0xFFF0F0F0),
     val onSurfaceMuted: Color = Color(0xFF9AA0A6),
