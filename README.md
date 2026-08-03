@@ -20,14 +20,65 @@
 
 ## 现状
 
-v0.1.0-SNAPSHOT —— 组件层已完成第一轮。当前覆盖范围对齐 Ncrust 的全部 M3 组件依赖与手滚组件:
-Ncrust 的 `Text`/`Icon` → `MetroText`/`MetroIcon`,`DropdownMenu` → `MetroDropdownMenu`,
-`HorizontalDivider` → `MetroDivider`,`NcrustPivotNav` → `MetroBottomNav`,`NcrustTabRow` → `MetroTabRow`,
-`NcrustIconButton` → `MetroIconButton`,`NcrustProgressIndicator` → `MetroProgressIndicator`,
-`PlayAllDialog` → `MetroDialog`,`SongMenuSheet` → `MetroBottomSheet`,`DetailScaffold`/`ResponsiveContent` →
+v0.1.0-SNAPSHOT —— **组件层第一轮完成 + 首屏 Ncrust 反向迁移落地**。
+
+Kanesumi 已被 Ncrust 通过 Gradle 组合构建 (`includeBuild`) 实际消费,SearchScreen
+作为首个迁移屏跑通:M3 `Text` / `Icon` / `DropdownMenu` / `DropdownMenuItem` /
+`NcrustIconButton` / `NcrustProgressIndicator` / `NcrustTabRow` / `TextButton` /
+`LocalTextStyle` 全部换成 Metro* 对应物,包含 MetroTheme 从 NcrustColors 派生的
+主题桥接。基础设施验证通过 —— 后续屏是重复劳动,不是新的架构风险。
+
+组件覆盖范围对齐 Ncrust 的全部 M3 组件依赖与手滚组件:
+`Text`/`Icon` → `MetroText`/`MetroIcon`,`DropdownMenu` → `MetroDropdownMenu`,
+`HorizontalDivider` → `MetroDivider`,`NcrustPivotNav` → `MetroBottomNav`,
+`NcrustTabRow` → `MetroTabRow`,`NcrustIconButton` → `MetroIconButton`,
+`NcrustProgressIndicator` → `MetroProgressIndicator`,`PlayAllDialog` → `MetroDialog`,
+`SongMenuSheet` → `MetroBottomSheet`,`DetailScaffold`/`ResponsiveContent` →
 `MetroDetailScaffold`/`MetroResponsiveContent`。
 
 播放器三层图形架构(PlayerCard 手势联动)不在库内 —— 那是 app 独有形态,不是通用控件。
+
+### v0.1 里 API 打磨点(反向迁移驱动的补丁)
+
+- `MetroText` 补齐 `maxLines / overflow / softWrap / minLines` 参数透传 —— 之前
+  只能靠 BasicText 兜底,阻断了任何需要单行截断的迁移场景。
+- `MetroTypography` 补 lineHeight 到全部样式(消除中文长段落行距过松),并追加
+  M3 命名尺度轴 (`headlineMedium` / `titleLarge` / `titleMedium` / `bodyLarge` /
+  `bodyMedium` / `bodySmall`) 与语义轴 (`pageHeading` / `title` / `body` /
+  `caption` / `label`) 并存 —— M3/Ncrust 代码迁进来可以一比一替换 style 引用。
+- `MetroColors.onSurfaceMuted` → `onSurfaceVariant`,对齐 M3 / 社区通用词汇,
+  减少迁移期 sed 摩擦。
+- `MetroTabRow` 顶部指示条与文字之间从 0dp 改成 12dp 呼吸,对齐 UWP Pivot 手感。
+
+## Ncrust 消费方式(组合构建)
+
+Ncrust 侧 `settings.gradle.kts` 加:
+
+```kotlin
+includeBuild("../../projects/Kanesumi") {
+    dependencySubstitution {
+        substitute(module("io.github.takahashirinta:kanesumi-core"))
+            .using(project(":kanesumi-core"))
+        substitute(module("io.github.takahashirinta:kanesumi-anim"))
+            .using(project(":kanesumi-anim"))
+        substitute(module("io.github.takahashirinta:kanesumi-controls"))
+            .using(project(":kanesumi-controls"))
+        substitute(module("io.github.takahashirinta:kanesumi-structure"))
+            .using(project(":kanesumi-structure"))
+    }
+}
+```
+
+`app/build.gradle.kts` 加:
+
+```kotlin
+implementation("io.github.takahashirinta:kanesumi-controls:0.1.0-SNAPSHOT")
+implementation("io.github.takahashirinta:kanesumi-structure:0.1.0-SNAPSHOT")
+```
+
+Kanesumi 侧无需 `maven-publish` —— 显式 `dependencySubstitution` 让 Gradle 直接
+把符号坐标映射到 includeBuild 的项目。未来发到 Maven Central 时,Ncrust 只需
+删掉整个 `includeBuild` 块,`implementation(...)` 的坐标一字不改就能切。
 
 ## 使用方法
 
