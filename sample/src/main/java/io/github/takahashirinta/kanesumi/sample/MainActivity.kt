@@ -50,10 +50,14 @@ import io.github.takahashirinta.kanesumi.controls.MetroDialog
 import io.github.takahashirinta.kanesumi.controls.MetroDivider
 import io.github.takahashirinta.kanesumi.controls.MetroDropdownMenu
 import io.github.takahashirinta.kanesumi.controls.MetroDropdownMenuItem
+import io.github.takahashirinta.kanesumi.controls.MetroIconButton
 import io.github.takahashirinta.kanesumi.controls.MetroListRow
 import io.github.takahashirinta.kanesumi.controls.MetroProgressIndicator
 import io.github.takahashirinta.kanesumi.controls.MetroResponsiveContent
 import io.github.takahashirinta.kanesumi.controls.MetroSurface
+import io.github.takahashirinta.kanesumi.controls.MetroSwitch
+import io.github.takahashirinta.kanesumi.controls.MetroTabItem
+import io.github.takahashirinta.kanesumi.controls.MetroTabRow
 import io.github.takahashirinta.kanesumi.core.insets.LocalMetroBottomStack
 import io.github.takahashirinta.kanesumi.core.insets.MetroInsets
 import io.github.takahashirinta.kanesumi.core.insets.bottomOverlayPadding
@@ -230,6 +234,8 @@ private fun HomeDemo(
             }
         }
         item { Spacer(Modifier.height(16.dp)) }
+        item { FormControlsShowcase() }
+        item { Spacer(Modifier.height(16.dp)) }
         item {
             MetroText(
                 text = "Details",
@@ -314,6 +320,59 @@ private fun PlayAllStyleDialog(onDismiss: () -> Unit) {
                 color = colors.onSurfaceMuted,
                 style = typography.body,
             )
+        }
+    }
+}
+
+@Composable
+private fun FormControlsShowcase() {
+    val colors = LocalMetroColors.current
+    val typography = LocalMetroTypography.current
+    var selectedTab by remember { mutableIntStateOf(0) }
+    var autoPlay by remember { mutableStateOf(false) }
+
+    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        MetroTabRow(
+            items = listOf(
+                MetroTabItem("All"),
+                MetroTabItem("Albums"),
+                MetroTabItem("Songs"),
+            ),
+            selectedTabIndex = selectedTab,
+            onTabSelected = { selectedTab = it },
+        )
+        Spacer(Modifier.height(12.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                MetroText(text = "Auto-play", color = colors.onSurface, style = typography.body)
+                MetroText(
+                    text = "Start playing when tapped",
+                    color = colors.onSurfaceMuted,
+                    style = typography.caption,
+                )
+            }
+            MetroSwitch(checked = autoPlay, onCheckedChange = { autoPlay = it })
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                MetroText(text = "Icon buttons", color = colors.onSurface, style = typography.body)
+            }
+            MetroIconButton(onClick = {}) {
+                MetroIcon(Icons.Filled.Star, "star", tint = colors.onSurface, sizeDp = 22.dp)
+            }
+            MetroIconButton(onClick = {}) {
+                MetroIcon(Icons.Filled.Settings, "settings", tint = colors.onSurface, sizeDp = 22.dp)
+            }
         }
     }
 }
