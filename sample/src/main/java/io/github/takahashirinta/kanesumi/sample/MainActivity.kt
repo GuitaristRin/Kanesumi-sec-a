@@ -46,6 +46,8 @@ import androidx.compose.ui.unit.sp
 import io.github.takahashirinta.kanesumi.controls.MetroButton
 import io.github.takahashirinta.kanesumi.controls.MetroDialog
 import io.github.takahashirinta.kanesumi.controls.MetroDivider
+import io.github.takahashirinta.kanesumi.controls.MetroDropdownMenu
+import io.github.takahashirinta.kanesumi.controls.MetroDropdownMenuItem
 import io.github.takahashirinta.kanesumi.controls.MetroListRow
 import io.github.takahashirinta.kanesumi.controls.MetroProgressIndicator
 import io.github.takahashirinta.kanesumi.controls.MetroResponsiveContent
@@ -209,6 +211,7 @@ private fun HomeDemo(
                 ) {
                     MetroProgressIndicator()
                 }
+                OverflowMenuButton()
             }
         }
         item { Spacer(Modifier.height(16.dp)) }
@@ -295,6 +298,50 @@ private fun PlayAllStyleDialog(onDismiss: () -> Unit) {
                 text = "Cancel",
                 color = colors.onSurfaceMuted,
                 style = typography.body,
+            )
+        }
+    }
+}
+
+@Composable
+private fun OverflowMenuButton() {
+    var expanded by remember { mutableStateOf(false) }
+    val colors = LocalMetroColors.current
+    Box {
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .background(colors.surfaceVariant)
+                .clickable { expanded = true },
+            contentAlignment = Alignment.Center,
+        ) {
+            MetroIcon(
+                imageVector = Icons.Filled.Settings,
+                contentDescription = "overflow",
+                tint = colors.onSurface,
+                sizeDp = 22.dp,
+            )
+        }
+        MetroDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            MetroDropdownMenuItem(
+                text = "Play next",
+                onClick = { expanded = false },
+                leading = { MetroIcon(Icons.Filled.PlayArrow, null, tint = colors.primary, sizeDp = 20.dp) },
+            )
+            MetroDivider()
+            MetroDropdownMenuItem(
+                text = "Add to library",
+                onClick = { expanded = false },
+                leading = { MetroIcon(Icons.Filled.Star, null, tint = colors.onSurface, sizeDp = 20.dp) },
+            )
+            MetroDivider()
+            MetroDropdownMenuItem(
+                text = "Share",
+                enabled = false,
+                onClick = { expanded = false },
             )
         }
     }
