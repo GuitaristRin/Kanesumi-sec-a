@@ -4,8 +4,6 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -24,7 +22,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -50,14 +47,14 @@ data class MetroBottomNavItem(
 /**
  * Metro 风底部导航。
  *
- * 三个动效全部通过 graphicsLayer / drawBehind 读取 Animatable,零重组:
+ * 三个动效全部通过 graphicsLayer 读取 Animatable,零重组:
  * - 顶部指示条从旧位滑到新位 (MetroCubic 200ms),不闪切
  * - 选中/未选中颜色以叠层 alpha 插值 (MetroCubic 180ms)
- * - 按下时直角矩形闪切 (100ms 淡入 / 200ms 淡出),无 ripple 无圆角
+ * - 按压反馈由 LocalIndication (MetroTheme 默认注入 MetroIndication) 提供,
+ *   直角矩形闪切,无 ripple 无圆角
  *
- * 默认颜色从 LocalMetroColors 取。默认自动登记进 MetroBottomStack,
- * 内容侧一句 bottomOverlayPadding() 即避开。系统导航栏 padding 不代管
- * —— 调用方在外层套 .metroNavigationBarsPadding() 保持可控。
+ * 默认颜色从 LocalMetroColors 取。默认自动登记进 MetroBottomStack。
+ * 系统导航栏 padding 不代管 —— 调用方外层套 .metroNavigationBarsPadding()。
  */
 @Composable
 fun MetroBottomNav(
@@ -67,7 +64,6 @@ fun MetroBottomNav(
     modifier: Modifier = Modifier,
     activeColor: Color = LocalMetroColors.current.onSurface,
     inactiveColor: Color = LocalMetroColors.current.onSurfaceMuted,
-    pressTint: Color = LocalMetroColors.current.pressTint,
     indicatorColor: Color = LocalMetroColors.current.primary,
     indicatorSize: DpSize = DpSize(24.dp, 2.dp),
     heightDp: Dp = 56.dp,
@@ -104,7 +100,6 @@ fun MetroBottomNav(
                     isSelected = index == selectedIndex,
                     activeColor = activeColor,
                     inactiveColor = inactiveColor,
-                    pressTint = pressTint,
                     onClick = { onSelected(index) },
                 )
             }
@@ -128,7 +123,6 @@ private fun RowScope.MetroBottomNavTab(
     isSelected: Boolean,
     activeColor: Color,
     inactiveColor: Color,
-    pressTint: Color,
     onClick: () -> Unit,
 ) {
     val selectionProgress = remember { Animatable(if (isSelected) 1f else 0f) }
@@ -139,33 +133,13 @@ private fun RowScope.MetroBottomNavTab(
         )
     }
 
-    val interactionSource = remember { MutableInteractionSource() }
-    val pressProgress = remember { Animatable(0f) }
-    LaunchedEffect(interactionSource) {
-        interactionSource.interactions.collect { interaction ->
-            when (interaction) {
-                is PressInteraction.Press ->
-                    pressProgress.animateTo(1f, tween(100, easing = MetroCubic))
-                is PressInteraction.Release, is PressInteraction.Cancel ->
-                    pressProgress.animateTo(0f, tween(200, easing = MetroCubic))
-            }
-        }
-    }
-
     val labelStyle = LocalMetroTypography.current.label
 
     Box(
         modifier = Modifier
             .weight(1f)
             .fillMaxHeight()
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick,
-            )
-            .drawBehind {
-                drawRect(color = pressTint, alpha = pressProgress.value)
-            }
+            .clickable(onClick = onClick)  // uses LocalIndication → MetroIndication
             .semantics {
                 contentDescription = item.label
             },
@@ -175,8 +149,6 @@ private fun RowScope.MetroBottomNavTab(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            // Icon stack: inactive layer always fully visible; active layer alpha driven
-            // by selectionProgress in graphicsLayer → color interp with zero recomposition.
             Box(contentAlignment = Alignment.Center) {
                 MetroIcon(
                     imageVector = item.icon,

@@ -28,7 +28,8 @@ android {
 }
 
 dependencies {
-    api(project(":kanesumi-core"))
+    // anim is a sibling leaf of core; both depend only on Compose foundations.
+    // Upper layers (structure / controls / sample) pull in both directly.
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.foundation)
     implementation(libs.compose.ui)
