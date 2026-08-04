@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -38,7 +39,13 @@ fun MetroIcon(
     Box(
         modifier = modifier
             .size(sizeDp)
-            .paint(painter = painter, colorFilter = ColorFilter.tint(tint))
+            // paint 默认 contentScale=Inside 只缩不放,sizeDp > 24dp 时图标不会变大
+            // —— 显式 Fit 让 vector 按 Box 尺寸缩放,sizeDp 才是图标真正可视尺寸。
+            .paint(
+                painter = painter,
+                contentScale = ContentScale.Fit,
+                colorFilter = ColorFilter.tint(tint),
+            )
             .then(semanticsModifier)
     )
 }
