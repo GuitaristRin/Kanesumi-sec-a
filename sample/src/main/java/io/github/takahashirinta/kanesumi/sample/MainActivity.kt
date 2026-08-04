@@ -31,8 +31,10 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -52,6 +54,8 @@ import io.github.takahashirinta.kanesumi.controls.MetroDropdownMenu
 import io.github.takahashirinta.kanesumi.controls.MetroDropdownMenuItem
 import io.github.takahashirinta.kanesumi.controls.MetroIconButton
 import io.github.takahashirinta.kanesumi.controls.MetroListRow
+import io.github.takahashirinta.kanesumi.controls.MetroLyricLine
+import io.github.takahashirinta.kanesumi.controls.MetroLyricsPanel
 import io.github.takahashirinta.kanesumi.controls.MetroProgressIndicator
 import io.github.takahashirinta.kanesumi.controls.MetroResponsiveContent
 import io.github.takahashirinta.kanesumi.controls.MetroSurface
@@ -74,6 +78,7 @@ import io.github.takahashirinta.kanesumi.structure.MetroDetailScaffold
 import io.github.takahashirinta.kanesumi.structure.MetroShell
 import io.github.takahashirinta.kanesumi.structure.bottomnav.MetroBottomNav
 import io.github.takahashirinta.kanesumi.structure.bottomnav.MetroBottomNavItem
+import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -114,6 +119,7 @@ private fun SampleRoot() {
     var openedDetail by remember { mutableStateOf<DemoDetail?>(null) }
     var dialogOpen by remember { mutableStateOf(false) }
     var sheetOpen by remember { mutableStateOf(false) }
+    var lyricsOpen by remember { mutableStateOf(false) }
 
     if (dialogOpen) {
         PlayAllStyleDialog(
@@ -143,22 +149,27 @@ private fun SampleRoot() {
             }
         },
     ) {
-        if (miniBarVisible) {
-            rememberBottomStackReservation(key = "sample.miniPlayer", heightDp = 56.dp)
-        }
+        if (lyricsOpen) {
+            LyricsDemo(onBack = { lyricsOpen = false })
+        } else {
+            if (miniBarVisible) {
+                rememberBottomStackReservation(key = "sample.miniPlayer", heightDp = 56.dp)
+            }
 
-        MetroResponsiveContent {
-            val current = openedDetail
-            if (current != null) {
-                DetailDemo(detail = current, onBack = { openedDetail = null })
-            } else {
-                HomeDemo(
-                    miniBarVisible = miniBarVisible,
-                    onToggleMiniBar = { miniBarVisible = !miniBarVisible },
-                    onOpenDetail = { openedDetail = it },
-                    onOpenDialog = { dialogOpen = true },
-                    onOpenSheet = { sheetOpen = true },
-                )
+            MetroResponsiveContent {
+                val current = openedDetail
+                if (current != null) {
+                    DetailDemo(detail = current, onBack = { openedDetail = null })
+                } else {
+                    HomeDemo(
+                        miniBarVisible = miniBarVisible,
+                        onToggleMiniBar = { miniBarVisible = !miniBarVisible },
+                        onOpenDetail = { openedDetail = it },
+                        onOpenDialog = { dialogOpen = true },
+                        onOpenSheet = { sheetOpen = true },
+                        onOpenLyrics = { lyricsOpen = true },
+                    )
+                }
             }
         }
     }
@@ -171,6 +182,7 @@ private fun HomeDemo(
     onOpenDetail: (DemoDetail) -> Unit,
     onOpenDialog: () -> Unit,
     onOpenSheet: () -> Unit,
+    onOpenLyrics: () -> Unit,
 ) {
     val insets = rememberMetroInsets()
     LazyColumn(
@@ -200,6 +212,16 @@ private fun HomeDemo(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
                 leadingIcon = Icons.Filled.Star,
+            )
+        }
+        item { Spacer(Modifier.height(8.dp)) }
+        item {
+            MetroButton(
+                text = "Lyrics demo (Apple Music × Metro)",
+                onClick = onOpenLyrics,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
             )
         }
         item { Spacer(Modifier.height(8.dp)) }
@@ -565,6 +587,89 @@ private fun LazyListScope.detailBody() {
             },
             onClick = {},
         )
+    }
+}
+
+@Composable
+private fun LyricsDemo(onBack: () -> Unit) {
+    val colors = LocalMetroColors.current
+    val typography = LocalMetroTypography.current
+    val lyrics = remember {
+        listOf(
+            MetroLyricLine(0, "Somewhere only we know"),
+            MetroLyricLine(3000, "I walked across an empty land"),
+            MetroLyricLine(6000, "I knew the pathway like the back of my hand"),
+            MetroLyricLine(9500, "I felt the earth beneath my feet"),
+            MetroLyricLine(12500, "Sat by the river and it made me complete"),
+            MetroLyricLine(15500, "Oh simple thing, where have you gone?"),
+            MetroLyricLine(18500, "I'm getting old and I need something to rely on"),
+            MetroLyricLine(22500, "So tell me when you're gonna let me in"),
+            MetroLyricLine(25500, "I'm getting tired and I need somewhere to begin"),
+        )
+    }
+    var playing by remember { mutableStateOf(false) }
+    var positionMs by remember { mutableLongStateOf(0L) }
+
+    LaunchedEffect(playing) {
+        while (playing) {
+            delay(16)
+            positionMs += 16L
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(colors.background),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            MetroIconButton(onClick = onBack) {
+                MetroIcon(
+                    imageVector = Icons.Filled.ArrowBack,
+                    contentDescription = "back",
+                    tint = colors.onSurface,
+                    sizeDp = 22.dp,
+                )
+            }
+            MetroText(
+                text = "Lyrics · timestamp-driven",
+                color = colors.onSurface,
+                style = typography.title,
+                modifier = Modifier.padding(start = 4.dp),
+            )
+        }
+        MetroLyricsPanel(
+            lines = lyrics,
+            currentPositionMillis = { positionMs },
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        ) {
+            MetroButton(
+                text = if (playing) "Pause" else "Play",
+                onClick = { playing = !playing },
+            )
+            MetroButton(
+                text = "Restart",
+                onClick = {
+                    positionMs = 0L
+                    playing = false
+                },
+                containerColor = colors.surfaceVariant,
+                contentColor = colors.onSurface,
+            )
+        }
     }
 }
 
