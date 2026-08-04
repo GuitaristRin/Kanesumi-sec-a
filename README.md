@@ -53,7 +53,7 @@
 | `:kanesumi-core` | 层 0 —— MetroInsets 安全区抽象、MetroBottomStack 底部叠层栈、主题基座 (MetroTheme/MetroColors/MetroTypography)、MetroText/MetroIcon、MetroIndication 直角闪切 |
 | `:kanesumi-anim` | 层 1 —— Sokuou 分支:UWP easing 全家族、sokuouSpring 桥接、SokuouPresets/SokuouTweens、MetroFlingBehavior |
 | `:kanesumi-structure` | 层 2 —— MetroShell / MetroAppBar / MetroDetailScaffold / MetroTopScrim / MetroBottomNav |
-| `:kanesumi-controls` | 层 3 —— MetroSurface / MetroButton / MetroListRow / MetroSwitch / MetroTabRow / MetroIconButton / MetroDivider / MetroProgressIndicator / MetroDialog / MetroDropdownMenu / MetroBottomSheet / MetroResponsiveContent |
+| `:kanesumi-controls` | 层 3 —— MetroSurface / MetroButton / MetroListRow / MetroSwitch / MetroTabRow / MetroIconButton / MetroDivider / MetroProgressIndicator / MetroDialog / MetroDropdownMenu / MetroBottomSheet / MetroResponsiveContent / MetroTextField / MetroDrawer / MetroChatInputBar |
 | `:sample` | 演示 app —— 覆盖所有组件的真实交互流 |
 
 注意:`:kanesumi-structure` **依赖** `:kanesumi-controls`(脚手架的空态/错误态要按钮、surface),方向无环即可,与层编号无关。
