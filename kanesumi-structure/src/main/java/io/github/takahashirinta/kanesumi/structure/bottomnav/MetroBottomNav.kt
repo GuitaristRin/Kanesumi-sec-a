@@ -37,6 +37,7 @@ import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
 import io.github.takahashirinta.kanesumi.core.theme.MetroIcon
 import io.github.takahashirinta.kanesumi.core.theme.MetroText
+import kotlin.math.abs
 
 @Immutable
 data class MetroBottomNavItem(
@@ -49,9 +50,21 @@ data class MetroBottomNavItem(
  *
  * 三个动效全部通过 graphicsLayer 读取 Animatable,零重组:
  * - 顶部指示条从旧位滑到新位 (MetroCubic 200ms),不闪切
- * - 选中/未选中颜色以叠层 alpha 插值 (MetroCubic 180ms)
+ * - 选中/未选中颜色从 indicatorProgress 派生 alpha,与 indicator 同源 --
+ *   连续 crossfade,不是"旧淡出新淡入"两段式
  * - 按压反馈由 LocalIndication (MetroTheme 默认注入 MetroIndication) 提供,
  *   直角矩形闪切,无 ripple 无圆角
+ *
+ * **动画启动时机**:走 LaunchedEffect(selectedIndex),在父组件重组完成后
+ * 才启动 animateTo。曾尝试用 `launch(UNDISPATCHED)` 在 tap 回调里同帧启动,
+ * 结果反而更糟 -- 低端机上父组件 tab-content 重组会紧接着占用 UI 线程
+ * 好几帧,而动画计时不等人:等到 UI 线程重新有空能画一帧时,动画计时
+ * 已经走到 40%+,视觉就是从旧位置直接"跳"到 40% 位置再往终点滑。
+ * LaunchedEffect 等重组完成再启动,虽然起步晚一拍,但每一帧动画都能
+ * 拿到 UI 线程,完整的 slide 可见 -- 这才是低端机的正解。
+ *
+ * 残留的"顿"来自调用方屏切开销 (Ncrust 里 when(selectedTab) 每次 destroy
+ * + mount 整屏),那需要调用方自己压 -- 库层帮不上。
  *
  * 默认颜色从 LocalMetroColors 取。默认自动登记进 MetroBottomStack。
  * 系统导航栏 padding 不代管 —— 调用方外层套 .metroNavigationBarsPadding()。
@@ -75,10 +88,11 @@ fun MetroBottomNav(
     }
 
     val indicatorProgress = remember { Animatable(selectedIndex.toFloat()) }
+
     LaunchedEffect(selectedIndex) {
         indicatorProgress.animateTo(
             targetValue = selectedIndex.toFloat(),
-            animationSpec = tween(durationMillis = 200, easing = MetroCubic),
+            animationSpec = tween(200, easing = MetroCubic),
         )
     }
 
@@ -97,9 +111,14 @@ fun MetroBottomNav(
             items.forEachIndexed { index, item ->
                 MetroBottomNavTab(
                     item = item,
-                    isSelected = index == selectedIndex,
                     activeColor = activeColor,
                     inactiveColor = inactiveColor,
+                    // 每个 tab 的 active alpha = 1 - |indicator - index|,clamp [0,1]。
+                    // indicator 恰好停在 index 时该 tab alpha=1;滑到中间时相邻两 tab
+                    // 各 0.5。图标/文字颜色与 indicator 同步流动,没有"我先动它后动"的错位。
+                    activeAlpha = {
+                        (1f - abs(indicatorProgress.value - index.toFloat())).coerceIn(0f, 1f)
+                    },
                     onClick = { onSelected(index) },
                 )
             }
@@ -120,19 +139,11 @@ fun MetroBottomNav(
 @Composable
 private fun RowScope.MetroBottomNavTab(
     item: MetroBottomNavItem,
-    isSelected: Boolean,
     activeColor: Color,
     inactiveColor: Color,
+    activeAlpha: () -> Float,
     onClick: () -> Unit,
 ) {
-    val selectionProgress = remember { Animatable(if (isSelected) 1f else 0f) }
-    LaunchedEffect(isSelected) {
-        selectionProgress.animateTo(
-            targetValue = if (isSelected) 1f else 0f,
-            animationSpec = tween(durationMillis = 180, easing = MetroCubic),
-        )
-    }
-
     val labelStyle = LocalMetroTypography.current.label
 
     Box(
@@ -161,7 +172,7 @@ private fun RowScope.MetroBottomNavTab(
                     contentDescription = null,
                     tint = activeColor,
                     sizeDp = 22.dp,
-                    modifier = Modifier.graphicsLayer { alpha = selectionProgress.value },
+                    modifier = Modifier.graphicsLayer { alpha = activeAlpha() },
                 )
             }
             Spacer(Modifier.height(2.dp))
@@ -175,7 +186,7 @@ private fun RowScope.MetroBottomNavTab(
                     text = item.label,
                     color = activeColor,
                     style = labelStyle,
-                    modifier = Modifier.graphicsLayer { alpha = selectionProgress.value },
+                    modifier = Modifier.graphicsLayer { alpha = activeAlpha() },
                 )
             }
         }
