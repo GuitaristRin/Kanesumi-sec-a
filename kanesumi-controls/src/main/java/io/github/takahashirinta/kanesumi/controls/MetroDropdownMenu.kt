@@ -28,15 +28,18 @@ import io.github.takahashirinta.kanesumi.core.theme.MetroText
  * Metro 风下拉菜单。包一层 androidx.compose.ui.window.Popup (foundation,
  * 非 M3),直角矩形 surfaceVariant 容器,无圆角无 elevation。
  *
- * 定位:Popup 以 BottomStart 对齐 + 8dp 垂直偏移 -- 即出现在调用方所在
- * Box 的左下角下方。调用约定与 M3 DropdownMenu 一致:把 MetroDropdownMenu
- * 与锚点图标放在同一个 Box 里,菜单自动出现在图标下方。
+ * 定位:通过 [alignment] 控制菜单相对锚点 Box 的位置,默认 BottomStart --
+ * 即锚点 Box 左下角下方。若锚点 Box 是整宽 Row(常见的"标签靠左 + 值/箭头
+ * 靠右"设置行),BottomStart 会让菜单出现在屏幕左边而不是箭头正下方 --
+ * 这种场景传 [Alignment.BottomEnd] 让菜单右对齐箭头。上方展开(锚点位于
+ * 屏幕下半)用 TopStart / TopEnd。
  *
  * focusable = true 让 Popup 抢焦点,触屏在菜单外点击 / 返回键都会触发
  * onDismissRequest。这是 M3 DropdownMenu 默认行为的核心。
  *
- * 不做 M3 那套"边界检测 + 翻转 / 偏移到锚点右侧"的复杂定位 -- 没有真实
- * 用例驱动,避免预抽象。需要时调用方自己包 Box 调位置。
+ * 不做 M3 那套"到边缘就自动翻转"的自适应定位 -- 那需要 LayoutCoordinates
+ * 回调 + 尺寸测量,复杂度高。让调用方按锚点在屏幕上的位置显式选 alignment,
+ * 更可预测。
  *
  * 取代 M3 DropdownMenu (默认圆角 + tonal elevation + ripple menu item)。
  */
@@ -47,12 +50,13 @@ fun MetroDropdownMenu(
     modifier: Modifier = Modifier,
     containerColor: Color = LocalMetroColors.current.surfaceVariant,
     maxWidthDp: Dp = 220.dp,
+    alignment: Alignment = Alignment.BottomStart,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     if (!expanded) return
     val density = LocalDensity.current
     Popup(
-        alignment = Alignment.BottomStart,
+        alignment = alignment,
         offset = IntOffset(0, with(density) { 8.dp.roundToPx() }),
         onDismissRequest = onDismissRequest,
         properties = PopupProperties(focusable = true),
