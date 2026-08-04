@@ -10,9 +10,9 @@ widgets are already Metro (right angles, borderless, flat), not "Material with a
 
 Version: `v0.1.0-SNAPSHOT`. Group: `io.github.takahashirinta`.
 
-Design source-of-truth: `docs/Kanesumi_设计文档.md`. When making non-trivial decisions
-(new component API shape, animation strategy, layering), consult it — it records the *why*
-behind the constraints below.
+Design source-of-truth: `README.md` — the 「为什么叫 Kanesumi / 设计理念 / 关键决策 (ADR)」
+sections. When making non-trivial decisions (new component API shape, animation strategy, layering),
+consult it — it records the *why* behind the constraints below.
 
 ## Build & run
 
@@ -39,9 +39,9 @@ test command; the CI shape is not yet fixed.
 :sample                   │ depends on all four
 ```
 
-Note the inversion: the design doc numbers `structure` as layer 2 and `controls` as layer 3, but
-`:kanesumi-structure` *depends on* `:kanesumi-controls` because scaffolds/chrome want buttons and
-surfaces for empty/error states. Direction is acyclic; do not add a controls→structure edge.
+Note the inversion: the README module table numbers `structure` as layer 2 and `controls` as
+layer 3, but `:kanesumi-structure` *depends on* `:kanesumi-controls` because scaffolds/chrome want
+buttons and surfaces for empty/error states. Direction is acyclic; do not add a controls→structure edge.
 
 `api(project(...))` is used deliberately — downstream consumers (including `:sample`) should be able
 to reach `MetroText`, `MetroSurface`, etc. through whichever module they already imported.

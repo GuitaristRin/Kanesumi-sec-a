@@ -42,7 +42,7 @@ Body 写 *why*,关键设计决策必须记录原因,让一年后读 git log 不�
 
 唯一事实源:`gradle.properties` 的 `VERSION_NAME`(当前 `0.1.0-SNAPSHOT`)与 `GROUP`
 (`io.github.takahashirinta`)。发布坐标(计划):`io.github.takahashirinta:kanesumi-*`,
-模块内不硬编码版本号。设计文档见 `docs/Kanesumi_设计文档.md`(命名决策、分层、ADR)。
+模块内不硬编码版本号。设计决策与 ADR 见 `README.md` 的「为什么叫 Kanesumi / 设计理念 / 关键决策」。
 
 ## 模块与依赖方向
 
@@ -54,7 +54,7 @@ Body 写 *why*,关键设计决策必须记录原因,让一年后读 git log 不�
 | `:kanesumi-structure` | api → core, anim, controls | 结构元件(MetroShell/MetroAppBar/MetroBottomNav/MetroDetailScaffold/…) |
 | `:sample` | 全部 | 演示 app |
 
-**注意分层编号陷阱**:设计文档把 `structure` 编号为层2、`controls` 编号为层3,但
+**注意分层编号陷阱**:README 的模块表把 `structure` 编号为层2、`controls` 编号为层3,但
 `:kanesumi-structure` **依赖** `:kanesumi-controls`(脚手架的空态/错误态要按钮、surface)。
 方向无环即可,勿按编号"从下往上"理解;严禁新增 controls→structure 反向边。
 跨模块依赖用 `api(project(...))`,让下游(含 sample)只需 import 一个模块就能触达

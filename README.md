@@ -6,7 +6,45 @@
 - 目标:"默认即 Metro" —— 不套主题,默认元件就是直角、无边框、信息优先的改良 Metro
 - GPU 零重组 —— 动画单一 `progress: Float` 驱动,视觉只在 `graphicsLayer` / `drawBehind` 内读取
 - 命名坐标(计划):`io.github.takahashirinta:kanesumi-*`
-- 设计文档:[`docs/Kanesumi_设计文档.md`](docs/Kanesumi_设计文档.md)
+- License:Apache-2.0
+
+## 为什么叫 Kanesumi(命名缘由)
+
+| 字 | 读音 | 含义 | 与库的对应 |
+|---|---|---|---|
+| 矩 | かね(kane) | 矩尺,画出直角的工具 | "以直角丈量边缘" —— 几何身份 |
+| 隅 | すみ(sumi) | 角落、边缘(同音"墨",日本墨的东方意境) | 直角、无边框、贴边 |
+
+合意:**"以直角丈量边缘"** —— 直角 / 无边框 / 贴边,浓缩了库的整个几何身份。
+
+为何不用 Sumikane(隅矩):`すみかね` 恰好是日语现成短语 **"住みかね"**(难以居住 / 犹豫不决),有负面歧义;且"隅(墨)"打头会先导向"颜色"而非"几何"。以"矩"立住几何,再谈墨色。
+
+## 设计理念(改良 Metro)
+
+三大优先级:
+
+1. **直角(No Curves)** —— 无圆角、无曲线,一切由直角切出;
+2. **无边框(Borderless)** —— 去装饰,信息优先,大量元件无缝贴边;
+3. **扁平与克制(Flat & Controlled)** —— 非物理动画(UWP easing,无弹簧/回弹),受控减速。
+
+"改良"在于:不是 Windows 8 磁贴式堆叠,而是**信息优先**的直角版式;无边框 + 贴边追求屏幕利用率;动画用 Sokuou 的受控减速,而非系统默认的物理弹性。
+
+### 性能原则(GPU 零重组)
+
+- 单一 `progress: Float` 驱动所有动画;
+- 视觉属性一律在 `graphicsLayer { }` / `drawBehind` / draw phase 读取,**绝不在组合阶段用 `animateFloatAsState`**(逐帧重组);
+- 类稳定性:`@Stable` / `@Immutable` 显式标注,避免重组作用域扩张;
+- 库的 API **强制**此约定:不提供 state 驱动动画的高层组件,动画值只从 `Animatable` 进 `graphicsLayer`。
+
+### 关键决策(ADR)
+
+| 决策 | 结论 | 原因 |
+|---|---|---|
+| 技术路线 | Compose 之上、Material 之下 | 保留布局/文本/手势/a11y 能力,摆脱 M3 魔改,不必 Skia 自绘 |
+| 动画策略 | 单 progress + graphicsLayer,零重组 | GPU 性能核心 |
+| 贴边策略 | 统一 `MetroInsets` 抽象 | Android 几何分裂(挖孔/刘海/手势条),需一次解而非逐组件算 |
+| 无障碍 | 层0 起自带语义树 | 不可妥协,`MetroIndication` 只负责视觉反馈 |
+| 与 Sokuou 关系 | Sokuou 独立(桌面),本库为其 Kotlin 分支 | 各自独立演进,本库消费曲线不吞并引擎 |
 
 ## 模块
 
@@ -17,6 +55,8 @@
 | `:kanesumi-structure` | 层 2 —— MetroShell / MetroAppBar / MetroDetailScaffold / MetroTopScrim / MetroBottomNav |
 | `:kanesumi-controls` | 层 3 —— MetroSurface / MetroButton / MetroListRow / MetroSwitch / MetroTabRow / MetroIconButton / MetroDivider / MetroProgressIndicator / MetroDialog / MetroDropdownMenu / MetroBottomSheet / MetroResponsiveContent |
 | `:sample` | 演示 app —— 覆盖所有组件的真实交互流 |
+
+注意:`:kanesumi-structure` **依赖** `:kanesumi-controls`(脚手架的空态/错误态要按钮、surface),方向无环即可,与层编号无关。
 
 ## 现状
 
@@ -105,3 +145,7 @@ MetroTheme {
 ./gradlew :sample:assembleDebug       # 演示 app
 ./gradlew :kanesumi-core:assemble     # 单个模块 AAR
 ```
+
+## License
+
+[Apache License 2.0](LICENSE) —— © 2026 TakahashiRinta
