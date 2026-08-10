@@ -1,7 +1,11 @@
 # AGENTS.md
 
-Kanesumi(矩隅)—— Metro 风格 Android UI 库,以直角丈量边缘。协作约定与 Claude Code 版
+Kanesumi(矩隅)—— Kanesumi Design Android UI 库,以直角丈量边缘。协作约定与 Claude Code 版
 (`CLAUDE.md`,更详细)并存;本文档面向所有 agent,只留最高信号、不查就猜错的点。
+
+## 术语约定
+
+设计语言为 **Kanesumi Design**(正典:Ether monorepo 仓根 `KANESUMI_DESIGN.md`,取代「Metro Design / 改良 Metro」)。`Metro*` 标识符(MetroText/MetroTheme/MetroIndication…)是代码/组件名,**保留不重命名**;写「Kanesumi 风格 / Kanesumi 铁律」,不写「Metro 风格」;缓动族称「UWP 缓动」;「Metro 时代」仅作历史指称。
 
 ## Build
 
@@ -70,7 +74,7 @@ Body 写 *why*,关键设计决策必须记录原因,让一年后读 git log 不�
   `animateFloatAsState`/`animateColorAsState`**(逐帧重组)。`MetroIndication`
   (Modifier.Node + DrawModifierNode)是参考实现。
 - **用 `:kanesumi-anim` 的 Sokuou 预设,不散写 `tween(300, CubicBezierEasing(...))`**。
-  Metro 无弹簧/回弹/ripple/elevation 联动,受控减速(MetroCubic 等);颜色插值用
+  Kanesumi Design 无弹簧/回弹/ripple/elevation 联动,受控减速(MetroCubic 等);颜色插值用
   "叠层 alpha"(如 `MetroBottomNav` 双 Icon 叠 Alpha),不用颜色动画。
 - **贴边走层0**:`MetroShell` 把 bottomBar 作为悬浮 overlay 画在 content 之上;底部元件
   通过 `rememberBottomStackReservation(key, heightDp)` 登记进 `MetroBottomStack`,内容侧
@@ -79,8 +83,8 @@ Body 写 *why*,关键设计决策必须记录原因,让一年后读 git log 不�
   必须收敛进 core/insets。
 - **包在 `MetroTheme` 里**:注入 `LocalIndication = MetroIndication`,树内所有
   `.clickable {}` 免费获得直角闪切。不要显式传 indication 除非有意覆盖。
-- **Metro 外观**:无圆角、无阴影、无边框(除非信息需要),直角切一切;Cover/图片铺满不裁圆角。
-- **默认即 Metro**:新组件零配置即得 Metro 外观;需要"调教"才能成型的 API 是设计缺陷。
+- **Kanesumi 外观**:无圆角、无阴影、无边框(除非信息需要),直角切一切;Cover/图片铺满不裁圆角。
+- **默认即 Kanesumi Design**:新组件零配置即得 Kanesumi Design 外观;需要"调教"才能成型的 API 是设计缺陷。
 - **a11y 不可妥协**:控件必须带 `semantics`(role/contentDescription);`MetroIndication`
   只负责视觉反馈。
 - **注释写 why 不写 what**;参数给出来源(如 SOKUOU_ENGINE.md 的典型值表),中英混合。
@@ -89,10 +93,10 @@ Body 写 *why*,关键设计决策必须记录原因,让一年后读 git log 不�
 
 1. `kanesumi-core/.../insets/MetroInsets.kt` + `MetroBottomStack.kt` —— "护城河",解释
    `MetroShell` 为何长这样、底部叠层为何走 scope 而非 prop-drilling。
-2. `kanesumi-core/.../theme/MetroTheme.kt` + `MetroIndication.kt` —— "默认即 Metro"如何
+2. `kanesumi-core/.../theme/MetroTheme.kt` + `MetroIndication.kt` —— "默认即 Kanesumi Design"如何
    经 `LocalIndication` 落地;零重组 draw 模式的参照。
 3. `kanesumi-anim/.../sokuou/Sokuou.kt` —— 动画词汇表,全部用这些名字。
-4. `kanesumi-structure/.../MetroShell.kt` —— **没有 topBar 槽**:Metro 约定"顶栏 = 滚动列表
+4. `kanesumi-structure/.../MetroShell.kt` —— **没有 topBar 槽**:Kanesumi Design 约定"顶栏 = 滚动列表
    第一项",`MetroAppBar` 是 LazyColumn 里的 item,不是 Scaffold 槽。
 5. `kanesumi-controls/` —— 每个 `Metro*` 文件头注明它取代的 M3/Ncrust 组件。
 

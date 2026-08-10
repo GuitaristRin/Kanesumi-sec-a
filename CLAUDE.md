@@ -4,15 +4,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-Kanesumi (矩隅) is a Metro-style Android UI library. **Zero `material3` dependency by design** —
+Kanesumi (矩隅) is a Kanesumi Design Android UI library. **Zero `material3` dependency by design** —
 built only on `androidx.compose.foundation` + `androidx.compose.ui`. The goal is that the *default*
-widgets are already Metro (right angles, borderless, flat), not "Material with a theme override".
+widgets are already Kanesumi Design (right angles, borderless, flat), not "Material with a theme override".
 
 Version: `v0.1.0-SNAPSHOT`. Group: `io.github.takahashirinta`.
 
-Design source-of-truth: `README.md` — the 「为什么叫 Kanesumi / 设计理念 / 关键决策 (ADR)」
-sections. When making non-trivial decisions (new component API shape, animation strategy, layering),
+Design source-of-truth: `KANESUMI_DESIGN.md`（Ether monorepo 仓根，跨平台唯一定义）+
+`README.md` 的「为什么叫 Kanesumi / 设计理念 / 关键决策 (ADR)」sections. When making non-trivial decisions (new component API shape, animation strategy, layering),
 consult it — it records the *why* behind the constraints below.
+
+## Terminology: Kanesumi Design
+
+The design language is officially **Kanesumi Design** (canon: Ether monorepo root `KANESUMI_DESIGN.md`), replacing the historical name "Metro Design". Agent notes:
+
+- `Metro*` identifiers (`MetroText`, `MetroTheme`, `MetroIndication`…) are code/component names — **keep, do not rename**.
+- New docs/comments: write 「Kanesumi 风格 / Kanesumi Design」, not 「Metro 风格」. The easing family is 「UWP 缓动」 (`UwpEasing`), from the Metro era; 「Metro 时代」 is a historical reference only.
+- Full mapping: `KANESUMI_DESIGN.md` §Ⅴ.
 
 ## Build & run
 
@@ -90,13 +98,13 @@ Start here in order:
 1. `kanesumi-core/.../insets/MetroInsets.kt` + `MetroBottomStack.kt` — the "护城河" (moat) layer.
    Understanding these two files explains why `MetroShell` looks the way it does and why bottom
    overlays coordinate through a scope instead of prop-drilling heights.
-2. `kanesumi-core/.../theme/MetroTheme.kt` + `MetroIndication.kt` — how the "default is Metro"
+2. `kanesumi-core/.../theme/MetroTheme.kt` + `MetroIndication.kt` — how the "default is Kanesumi Design"
    promise is actually installed (via `LocalIndication`) and the reference for the zero-recomposition
    draw pattern.
 3. `kanesumi-anim/.../sokuou/Sokuou.kt` — animation vocabulary. `SokuouPresets.SheetAppear`,
    `.QuickSwitch`, `sokuouSpring(...)` — this is the whole vocabulary; use these names.
 4. `kanesumi-structure/.../MetroShell.kt` — the app-level container. Note that it *does not*
-   provide a `topBar` slot: Metro convention is "top bar = the first item of the scrolling
+   provide a `topBar` slot: Kanesumi Design convention is "top bar = the first item of the scrolling
    list", not chrome. `MetroAppBar` is meant to be an item inside a `LazyColumn`, not a Scaffold slot.
 5. `kanesumi-controls/` — Ncrust-parity widgets (each Metro* has a comment noting which
    Material 3 / Ncrust component it replaces).

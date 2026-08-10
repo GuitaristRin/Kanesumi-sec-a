@@ -1,12 +1,14 @@
 # Kanesumi(矩隅)
 
-一个 Metro 风格 Android UI 库。以直角丈量边缘。
+一个 Kanesumi Design Android UI 库。以直角丈量边缘。
 
 - 独立 repo,**零 material3 依赖** —— 只用 `androidx.compose.foundation` + `androidx.compose.ui`
-- 目标:"默认即 Metro" —— 不套主题,默认元件就是直角、无边框、信息优先的改良 Metro
+- 目标:「默认即 Kanesumi Design」—— 不套主题,默认元件就是直角、无边框、信息优先的 Kanesumi Design
 - GPU 零重组 —— 动画单一 `progress: Float` 驱动,视觉只在 `graphicsLayer` / `drawBehind` 内读取
 - 命名坐标(计划):`io.github.takahashirinta:kanesumi-*`
 - License:Apache-2.0
+
+> Kanesumi Design 正典（跨平台唯一定义）见 Ether monorepo 仓根 `KANESUMI_DESIGN.md`；本文为 sec-a 扇区的落地说明。
 
 ## 为什么叫 Kanesumi(命名缘由)
 
@@ -19,7 +21,7 @@
 
 为何不用 Sumikane(隅矩):`すみかね` 恰好是日语现成短语 **"住みかね"**(难以居住 / 犹豫不决),有负面歧义;且"隅(墨)"打头会先导向"颜色"而非"几何"。以"矩"立住几何,再谈墨色。
 
-## 设计理念(改良 Metro)
+## 设计理念(Kanesumi Design)
 
 三大优先级:
 
@@ -27,7 +29,7 @@
 2. **无边框(Borderless)** —— 去装饰,信息优先,大量元件无缝贴边;
 3. **扁平与克制(Flat & Controlled)** —— 非物理动画(UWP easing,无弹簧/回弹),受控减速。
 
-"改良"在于:不是 Windows 8 磁贴式堆叠,而是**信息优先**的直角版式;无边框 + 贴边追求屏幕利用率;动画用 Sokuou 的受控减速,而非系统默认的物理弹性。
+Kanesumi Design 的「改良」在于:不是 Windows 8 磁贴式堆叠,而是**信息优先**的直角版式;无边框 + 贴边追求屏幕利用率;动画用 Sokuou 的受控减速,而非系统默认的物理弹性。
 
 ### 性能原则(GPU 零重组)
 
