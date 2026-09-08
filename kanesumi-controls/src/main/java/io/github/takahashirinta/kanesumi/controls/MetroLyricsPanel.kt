@@ -3,6 +3,7 @@ package io.github.takahashirinta.kanesumi.controls
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -79,6 +80,8 @@ import kotlin.math.abs
 data class MetroLyricLine(
     val timestampMillis: Long,
     val text: String,
+    // 可选翻译(Spotify 式双语):非空时渲染在原句下方,小号降透明度。
+    val translation: String = "",
 )
 
 @Composable
@@ -92,6 +95,8 @@ fun MetroLyricsPanel(
     futureLineColor: Color = Color.Gray.copy(alpha = 0.4f),
     fontSize: TextUnit = 32.sp,
     lineHeight: TextUnit = 42.sp,
+    translationFontSize: TextUnit = 20.sp,
+    translationLineHeight: TextUnit = 26.sp,
     inactiveScale: Float = 0.82f,
     enabled: Boolean = true,
     onLineClick: (Long) -> Unit = {},
@@ -121,7 +126,10 @@ fun MetroLyricsPanel(
             .map { currentLineIndex(it, timestamps) }
             .distinctUntilChanged()
             .collect { idx ->
-                val text = if (idx >= 0 && idx < lines.size) lines[idx].text else ""
+                val line = if (idx >= 0 && idx < lines.size) lines[idx] else null
+                val text = line?.let {
+                    if (it.translation.isEmpty()) it.text else "${it.text}\n${it.translation}"
+                } ?: ""
                 if (text != a11yText.value) a11yText.value = text
             }
     }
@@ -218,26 +226,47 @@ fun MetroLyricsPanel(
                         }
                         .padding(vertical = 10.dp),
                 ) {
-                    MetroText(
-                        text = line.text,
-                        style = TextStyle(
-                            fontSize = fontSize,
-                            lineHeight = lineHeight,
-                            fontWeight = FontWeight.Bold,
-                        ),
-                        softWrap = true,
-                        color = color,
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .graphicsLayer {
                                 // 连续距离驱动缩放:无翻转瞬间,行间渐变交接。
+                                // 缩放放在整行(原句+翻译)外层,双语同时放大/缩小。
                                 val dist = abs(index - smoothCurrentIndex.value)
                                 val scale = lerp(1f, inactiveScale, (dist / 1.8f).coerceIn(0f, 1f))
                                 scaleX = scale
                                 scaleY = scale
                                 transformOrigin = TransformOrigin(0f, 0.5f)
                             },
-                    )
+                    ) {
+                        MetroText(
+                            text = line.text,
+                            style = TextStyle(
+                                fontSize = fontSize,
+                                lineHeight = lineHeight,
+                                fontWeight = FontWeight.Bold,
+                            ),
+                            softWrap = true,
+                            color = color,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        if (line.translation.isNotEmpty()) {
+                            // Spotify 式双语:原句下方小号、降透明度渲染翻译。
+                            MetroText(
+                                text = line.translation,
+                                style = TextStyle(
+                                    fontSize = translationFontSize,
+                                    lineHeight = translationLineHeight,
+                                    fontWeight = FontWeight.Normal,
+                                ),
+                                softWrap = true,
+                                color = color.copy(alpha = color.alpha * 0.6f),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 2.dp),
+                            )
+                        }
+                    }
                 }
             }
 
