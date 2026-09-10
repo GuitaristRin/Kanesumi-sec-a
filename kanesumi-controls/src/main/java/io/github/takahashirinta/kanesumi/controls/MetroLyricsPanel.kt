@@ -90,6 +90,9 @@ fun MetroLyricsPanel(
     currentPositionMillis: () -> Long,
     modifier: Modifier = Modifier,
     isVisible: Boolean = true,
+    // 外部强制定位信号(递增即可): 面板常挂载时 isVisible 不会翻转,
+    // 播放器从折叠态展开/重新唤起需要主动把滚动锚回当前行
+    forcedScrollTrigger: Int = 0,
     currentLineColor: Color = LocalMetroColors.current.primary,
     pastLineColor: Color = Color.White.copy(alpha = 0.6f),
     futureLineColor: Color = Color.Gray.copy(alpha = 0.4f),
@@ -154,6 +157,24 @@ fun MetroLyricsPanel(
     // 面板显现瞬间直接跳到当前行,不等自动滚动逐行滚过去。
     LaunchedEffect(isVisible) {
         if (!isVisible || lines.isEmpty()) return@LaunchedEffect
+        var vh = listState.layoutInfo.viewportSize.height
+        if (vh == 0) {
+            delay(16)
+            vh = listState.layoutInfo.viewportSize.height
+        }
+        val idx = currentIndex.coerceAtLeast(0)
+        val offset = if (vh > 0) -(vh * 0.36f).toInt() else 0
+        smoothCurrentIndex.snapTo(idx.toFloat())
+        listState.scrollToItem((idx + 1).coerceIn(1, lines.size), offset)
+        lastAutoScrolledIndex = idx
+    }
+
+    // 外部强制定位(如播放器展开): 语义同 isVisible 定位, 但由调用方递增触发。
+    // 顺带解除用户手动滚动暂停——展开瞬间用户预期歌词就在当前行。
+    LaunchedEffect(forcedScrollTrigger) {
+        if (forcedScrollTrigger == 0 || !isVisible || lines.isEmpty()) return@LaunchedEffect
+        userScrolling = false
+        lastAutoScrolledIndex = -1
         var vh = listState.layoutInfo.viewportSize.height
         if (vh == 0) {
             delay(16)
