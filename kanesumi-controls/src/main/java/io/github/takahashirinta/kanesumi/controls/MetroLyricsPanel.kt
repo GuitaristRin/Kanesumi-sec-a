@@ -1,6 +1,7 @@
 package io.github.takahashirinta.kanesumi.controls
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -119,8 +120,14 @@ fun MetroLyricsPanel(
         }
     }
 
-    // 渐入加载:空 -> 非空(或换歌)时整面板 alpha 0 -> 1。
-    val fadeIn = remember { Animatable(0f) }
+    // 渐入加载:空 -> 非空(或换歌)时整面板 alpha 0 -> 1。由 lines 直接派生,
+    // 不用手动 Animatable —— 否则一旦那个 LaunchedEffect 没跑完/没重启,
+    // 面板会永远停在 alpha=0, 表现为"歌词明明有却一片空白"。
+    val fadeIn by animateFloatAsState(
+        targetValue = if (lines.isNotEmpty()) 1f else 0f,
+        animationSpec = SokuouTweens.CoverFade,
+        label = "lyricsFadeIn",
+    )
 
     // a11y:liveRegion 播报当前行文本,map + distinctUntilChanged 压掉帧级位置流。
     val a11yText = remember { mutableStateOf("") }
@@ -142,16 +149,12 @@ fun MetroLyricsPanel(
     var programmaticScrolling by remember { mutableStateOf(false) }
     var lastAutoScrolledIndex by remember { mutableIntStateOf(-1) }
 
-    // 换歌:回顶 + 清状态 + 连续索引复位 + 渐入。
+    // 换歌:回顶 + 清状态 + 连续索引复位。（渐入由上面的 fadeIn 自动派生）
     LaunchedEffect(lines) {
         userScrolling = false
         lastAutoScrolledIndex = -1
         smoothCurrentIndex.snapTo(0f)
         listState.scrollToItem(0)
-        if (lines.isNotEmpty()) {
-            fadeIn.snapTo(0f)
-            fadeIn.animateTo(1f, SokuouTweens.CoverFade)
-        }
     }
 
     // 面板显现瞬间直接跳到当前行,不等自动滚动逐行滚过去。
@@ -218,7 +221,7 @@ fun MetroLyricsPanel(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .graphicsLayer { alpha = fadeIn.value }
+            .graphicsLayer { alpha = fadeIn }
             .semantics {
                 text = AnnotatedString(a11yText.value)
                 liveRegion = LiveRegionMode.Polite
