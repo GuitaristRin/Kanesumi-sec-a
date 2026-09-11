@@ -62,9 +62,13 @@ fun MetroSwitch(
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     accentColor: Color = LocalMetroColors.current.primary,
-    trackOffColor: Color = Color(0xFF333333),
-    borderOffColor: Color = Color.Gray.copy(alpha = 0.35f),
+    // off 态轨道：onSurfaceVariant 半透明，深浅色下都是可辨的中性灰。
+    trackOffColor: Color = LocalMetroColors.current.onSurfaceVariant.copy(alpha = 0.45f),
+    borderOffColor: Color = LocalMetroColors.current.divider,
 ) {
+    // thumb 恒为 onPrimary（浅色主题白、深色主题白），压在 primary/中性灰轨道上都清晰；
+    // 旧实现 on 态写死黑色，浅色主题下就是一块突兀的黑。
+    val thumbColor = LocalMetroColors.current.onPrimary
     val progress = remember { Animatable(if (checked) 1f else 0f) }
     var isDragging by remember { mutableStateOf(false) }
     val animScope = rememberCoroutineScope()
@@ -141,7 +145,6 @@ fun MetroSwitch(
                 val thumbW = 22.dp.toPx()
                 val travel = size.width - padPx * 2f - thumbW
                 val thumbX = padPx + travel * p
-                val thumbColor = if (p > 0.5f) Color.Black else Color.White
                 drawRect(
                     color = thumbColor,
                     topLeft = Offset(thumbX, padPx),
