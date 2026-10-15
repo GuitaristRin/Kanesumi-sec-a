@@ -87,6 +87,16 @@ Body 写 *why*,关键设计决策必须记录原因,让一年后读 git log 不�
 - **默认即 Kanesumi Design**:新组件零配置即得 Kanesumi Design 外观;需要"调教"才能成型的 API 是设计缺陷。
 - **a11y 不可妥协**:控件必须带 `semantics`(role/contentDescription);`MetroIndication`
   只负责视觉反馈。
+- **键盘焦点**:`MetroIndication` 默认叠加 2dp 向内 primary 焦点框,焦点 / InputMode
+  仅 draw 读取;Touch 下显式不画框,不能仅靠 clickable 不接收触摸焦点的假设。
+  构造参数 `focusEnabled=true`、`focusColor=Color.Unspecified`(取当前主题 primary)
+  追加在旧参数之后。自定义焦点目标与 indication 必须共享 InteractionSource;
+  TextField 已显式连接。pointerInput-only 的 Switch / 歌词行不会自动变成可获焦控件。
+- **小屏底栏**:`MetroBottomNav.labelMode` 默认 `MetroBottomNavLabelMode.Always`(旧行为),
+  另有 SelectedOnly / Never;Never + `heightDp=48.dp` 只布局居中的 22dp 图标。
+  SelectedOnly 标签用 QuickSwitch 叠 alpha,动画 / 测量 state 只在 graphicsLayer 读。
+  现有指示条 / 颜色动画不变。sample 首页「焦点 / 小屏」可切模式 / 56、48dp 高度;
+  完整焦点覆盖表与 API 默认值见 README「键盘焦点与小屏底栏」。
 - **注释写 why 不写 what**;参数给出来源(如 SOKUOU_ENGINE.md 的典型值表),中英混合。
 
 ## 快速上手(按序读)

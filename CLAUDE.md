@@ -84,6 +84,14 @@ so its height enters the shared stack. Scrollable content pads itself with `bott
 **5. Wrap the app in `MetroTheme`.** It installs `LocalIndication = MetroIndication(tint = colors.pressTint)`,
 so every `.clickable {}` in the tree gets the right-angle press flash for free. Do not pass
 `indication = ...` explicitly unless overriding intentionally.
+Keyboard focus adds an inward 2dp primary-color ring, read only in draw and explicitly gated by
+`InputMode.Keyboard`. Constructor additions: `focusEnabled = true`, `focusColor = Color.Unspecified`
+(resolves current theme primary). Focus targets must share their InteractionSource with the
+indication; MetroTextField does this explicitly. Pointer-only Switch / lyric lines are not focus
+targets. See README's focus coverage table before claiming every control is keyboard-accessible.
+`MetroBottomNav.labelMode` defaults to `Always`; `SelectedOnly` fades labels with QuickSwitch,
+`Never` centers icons without laying out labels (supports `heightDp = 48.dp`). Existing indicator
+motion remains unchanged. Sample home → 「焦点 / 小屏」 exposes all modes and 56 / 48dp heights.
 
 **6. Insets go through `MetroInsets`, not raw `WindowInsets`.** `rememberMetroInsets()` returns
 a single immutable snapshot bundling status bar / nav bar / display cutout / IME with both

@@ -78,6 +78,7 @@ import io.github.takahashirinta.kanesumi.structure.MetroDetailScaffold
 import io.github.takahashirinta.kanesumi.structure.MetroShell
 import io.github.takahashirinta.kanesumi.structure.bottomnav.MetroBottomNav
 import io.github.takahashirinta.kanesumi.structure.bottomnav.MetroBottomNavItem
+import io.github.takahashirinta.kanesumi.structure.bottomnav.MetroBottomNavLabelMode
 import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
@@ -120,6 +121,9 @@ private fun SampleRoot() {
     var dialogOpen by remember { mutableStateOf(false) }
     var sheetOpen by remember { mutableStateOf(false) }
     var lyricsOpen by remember { mutableStateOf(false) }
+    var focusDemoOpen by remember { mutableStateOf(false) }
+    var focusLabelMode by remember { mutableStateOf(MetroBottomNavLabelMode.Always) }
+    var focusNavHeight by remember { mutableStateOf(56.dp) }
 
     if (dialogOpen) {
         PlayAllStyleDialog(
@@ -144,6 +148,8 @@ private fun SampleRoot() {
                         items = NavItems,
                         selectedIndex = selectedTab,
                         onSelected = { selectedTab = it },
+                        labelMode = if (focusDemoOpen) focusLabelMode else MetroBottomNavLabelMode.Always,
+                        heightDp = if (focusDemoOpen) focusNavHeight else 56.dp,
                     )
                 }
             }
@@ -158,7 +164,16 @@ private fun SampleRoot() {
 
             MetroResponsiveContent {
                 val current = openedDetail
-                if (current != null) {
+                if (focusDemoOpen) {
+                    FocusSmallScreenDemo(
+                        items = NavItems,
+                        labelMode = focusLabelMode,
+                        heightDp = focusNavHeight,
+                        onLabelModeChange = { focusLabelMode = it },
+                        onHeightChange = { focusNavHeight = it },
+                        onBack = { focusDemoOpen = false },
+                    )
+                } else if (current != null) {
                     DetailDemo(detail = current, onBack = { openedDetail = null })
                 } else {
                     HomeDemo(
@@ -168,6 +183,7 @@ private fun SampleRoot() {
                         onOpenDialog = { dialogOpen = true },
                         onOpenSheet = { sheetOpen = true },
                         onOpenLyrics = { lyricsOpen = true },
+                        onOpenFocusDemo = { focusDemoOpen = true },
                     )
                 }
             }
@@ -183,6 +199,7 @@ private fun HomeDemo(
     onOpenDialog: () -> Unit,
     onOpenSheet: () -> Unit,
     onOpenLyrics: () -> Unit,
+    onOpenFocusDemo: () -> Unit,
 ) {
     val insets = rememberMetroInsets()
     LazyColumn(
@@ -200,6 +217,13 @@ private fun HomeDemo(
                         sizeDp = 22.dp,
                     )
                 },
+            )
+        }
+        item {
+            MetroButton(
+                text = "焦点 / 小屏",
+                onClick = onOpenFocusDemo,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
             )
         }
         item { DebugPanel(insets = insets) }

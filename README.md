@@ -141,11 +141,66 @@ MetroTheme {
 - 结构元件(Nav / mini bar)通过 `rememberBottomStackReservation` 自动登记进底部叠层栈,内容侧 `bottomOverlayPadding()` 一句避开
 - 动画一律用 `:kanesumi-anim` 的 Sokuou 预设,不散写 `tween(300, CubicBezierEasing(...))`
 
+### 键盘焦点与小屏底栏
+
+`MetroIndication` 在键盘 / 方向键模式下叠加 **2dp、向内、直角、primary 色**的焦点框。
+焦点切换无动画;先画内容和原有按压闪切,再画焦点框,按住确认键时两者都保留。
+焦点 snapshot state 与输入模式只在 draw phase 读取,不带来组合期状态订阅。
+Compose clickable 内置 non-touch canFocus,但不覆盖 BasicTextField、自定义 focusable 或外层
+focusProperties 覆盖;即使实际有焦点,`InputMode.Touch` 也显式屏蔽键盘焦点框。
+它不创建 focus target,自定义控件必须让焦点目标与 indication 使用同一个 InteractionSource。
+
+新增 API (均追加在原参数之后,旧的 Kotlin 位置 / 命名调用保持兼容):
+
+| API | 默认值 | 含义 |
+|---|---|---|
+| `MetroIndication.focusEnabled: Boolean` | `true` | 关闭时只保留旧按压反馈,供自行绘制焦点的控件使用 |
+| `MetroIndication.focusColor: Color` | `Color.Unspecified` | 未指定时在 draw 中取所在 `LocalMetroColors.primary` |
+| `MetroBottomNav.labelMode: MetroBottomNavLabelMode` | `Always` | `Always` 图标 + 标签(旧默认);`SelectedOnly` 仅选中项标签可见;`Never` 只布局图标 |
+
+`SelectedOnly` 用 `SokuouTweens.QuickSwitch` 淡入 / 淡出标签,图标随之回到 / 离开垂直中心;
+颜色仍用原双 Icon / Text 叠层 alpha,顶部指示条仍为原 200ms MetroCubic。
+隐藏标签不重复进入语义树,tab 始终保留 label 名称、Tab role 和 selected 状态。
+左右键移焦(含 RTL),确认键才选择。`heightDp` 仍默认 56dp;小屏可用:
+
+```kotlin
+MetroBottomNav(
+    items = items,
+    selectedIndex = selectedIndex,
+    onSelected = onSelected,
+    heightDp = 48.dp,
+    labelMode = MetroBottomNavLabelMode.Never,
+)
+```
+
+Never 不测量 / 布局文字和间距,22dp 图标在 48dp 高度居中(上下各 13dp),顶部 2dp 指示条不占图标空间。
+
+默认 `MetroTheme` 中的键盘焦点覆盖情况(调用方额外的 Modifier / LocalIndication 覆盖可能改变行为):
+
+| 控件 / 条件 | 能获键盘焦点 | 默认画焦点框 | 原因 |
+|---|---|---|---|
+| 启用的 `MetroButton`、`MetroIconButton`、`MetroDropdownMenuItem` | 是 | 是 | clickable 自动发 FocusInteraction 给 LocalIndication |
+| 有 onClick 的 `MetroListRow`、`MetroSurface` | 是 | 是 | 同上;无 onClick 则没有焦点目标 |
+| `MetroTabRow`、`MetroBottomNav`、`MetroSidebar` 的项;`MetroSelectorFlyout` 的选项 | 是 | 是 | 每个项各有 clickable / 共享交互源 |
+| 启用的 `MetroTextField`(含 readOnly) | 是 | 是 | BasicTextField 与外容器 indication 显式共用 interactionSource |
+| `MetroChatInputBar` | 输入框是;发送按钮仅 active 时是 | 对应子控件是 | 复用 TextField / Button / IconButton |
+| 禁用按钮 / 菜单项 / 文本框;无 onClick 的行 / Surface | 否 | 否 | 未创建或禁用了交互焦点目标 |
+| `MetroTopScrim` 的返回按钮(含 `MetroDetailScaffold` 默认返回按钮) | 是 | 否 | 旧默认 `indication = null`;直接用 TopScrim 可传 `LocalIndication.current` 开启 |
+| `MetroDrawer` / `MetroBottomSheet` 的背景遮罩 | 是 | 否 | 原 clickable 仍在,但显式 `indication = null`;不把无视觉误写成不可获焦 |
+| `MetroSwitch`、`MetroLyricsPanel` 的歌词行 | 否 | 否 | 现有交互仅 pointerInput,没有 focusable / clickable,本次未改手势行为 |
+| `MetroText` / `MetroIcon` / Divider / ProgressIndicator / 纯结构容器 | 自身否 | 自身否 | 没有交互目标;内部或调用方提供的可点击子项按其自身规则处理 |
+
+sample: 首页顶部按钮 **「焦点 / 小屏」** → 可滚动演示页。纵向按钮与 12 个可点击列表行可遍历,
+禁用按钮 / 只读行用于对照。标签模式按钮轮换三策略,高度按钮切换 56 / 48dp,
+同时更新真实 shell 底栏和三种可操作的内联预览(内联预览 `autoReserveBottomStack = false`)。
+页面提供返回首页按钮与 BackHandler;列表使用 bottomOverlayPadding,末行可滚出底栏覆盖区。
+
 ## 构建
 
 ```bash
 ./gradlew :sample:assembleDebug       # 演示 app
 ./gradlew :kanesumi-core:assemble     # 单个模块 AAR
+./gradlew assemble                    # 全量构建
 ```
 
 ## License
