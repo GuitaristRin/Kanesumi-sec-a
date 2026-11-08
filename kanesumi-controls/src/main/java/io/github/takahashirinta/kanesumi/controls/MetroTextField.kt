@@ -2,10 +2,12 @@ package io.github.takahashirinta.kanesumi.controls
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
@@ -13,8 +15,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -55,11 +60,17 @@ fun MetroTextField(
     val colors = LocalMetroColors.current
     val mergedStyle = textStyle.copy(color = if (enabled) colors.onSurface else colors.onSurfaceVariant)
     val interactionSource = remember { MutableInteractionSource() }
+    val focusRequester = remember { FocusRequester() }
 
     Box(
         modifier = modifier
             .background(containerColor)
             .indication(interactionSource, LocalIndication.current)
+            // 只有 BasicTextField 自己的宽度可点：文字短时右侧一大片是死区
+            // （实机上「用户名 / 密码点不进去」就是这个）。整块底板也要能聚焦。
+            .pointerInput(enabled) {
+                if (enabled) detectTapGestures(onTap = { focusRequester.requestFocus() })
+            }
             .padding(contentPadding),
         contentAlignment = Alignment.CenterStart,
     ) {
@@ -73,7 +84,10 @@ fun MetroTextField(
         BasicTextField(
             value = value,
             onValueChange = onValueChange,
-            modifier = Modifier.heightIn(min = 20.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 20.dp)
+                .focusRequester(focusRequester),
             enabled = enabled,
             readOnly = readOnly,
             interactionSource = interactionSource,
