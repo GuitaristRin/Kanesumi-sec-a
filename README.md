@@ -141,6 +141,26 @@ MetroTheme {
 - 结构元件(Nav / mini bar)通过 `rememberBottomStackReservation` 自动登记进底部叠层栈,内容侧 `bottomOverlayPadding()` 一句避开
 - 动画一律用 `:kanesumi-anim` 的 Sokuou 预设,不散写 `tween(300, CubicBezierEasing(...))`
 
+### 默认视觉与迁移
+
+`MetroTheme()` 默认浅色 + 暮蓝。暗色用 `MetroTheme(colors = MetroColors.dark())`，
+采用主仓 Lumia 方案的黑 / `#171717` / `#333333` 中性层与白色正文；自定义基色可传给
+`MetroColors.light(accent)` / `dark(accent)`。Android 宿主负责让系统栏图标明暗跟随所选主题，
+sample 的 `MainActivity` 给出接线示例。
+
+`MetroColors()` 保持暗色构造语义，旧参数顺序不变；新增 `controlFill` 默认取已有
+`surfaceVariant`。Ncrust 的显式调色板继续覆盖默认方案。标题字重按主仓 §112 改为 Light，
+正文保持 Regular；新增 `header/subheader/subtitle/base` 语义阶梯。
+
+`MetroButton` 默认改为中性 Standard，关键动作传 `kind = MetroButtonKind.Accent`，
+文字动作可选 `Text`。显式颜色优先；未指定前景时按容器角色或黑白对比度解析。
+旧调用若依赖“每个按钮都是强调按钮”，需补 `kind = Accent`。按钮至少 48dp 高、单行省略；
+列表主副文字也默认单行省略，多行内容可传 `titleMaxLines/subtitleMaxLines`。
+
+`MetroResponsiveContent()` 手机仍限宽 360dp，宽屏默认铺开并留 24dp。显式
+`maxWidthDp` 在所有宽度都生效。sample 的概览 / 控件 / 版式 / 工具入口可切深浅主题，
+宽屏换侧栏；诊断信息收在工具页。完整契约见 [默认视觉与主题契约](docs/COMPONENT_SPEC.md)。
+
 ### 键盘焦点与小屏底栏
 
 `MetroIndication` 在键盘 / 方向键模式下叠加 **2dp、向内、直角、primary 色**的焦点框。
@@ -190,12 +210,21 @@ Never 不测量 / 布局文字和间距,22dp 图标在 48dp 高度居中(上下�
 | `MetroSwitch`、`MetroLyricsPanel` 的歌词行 | 否 | 否 | 现有交互仅 pointerInput,没有 focusable / clickable,本次未改手势行为 |
 | `MetroText` / `MetroIcon` / Divider / ProgressIndicator / 纯结构容器 | 自身否 | 自身否 | 没有交互目标;内部或调用方提供的可点击子项按其自身规则处理 |
 
-sample: 首页顶部按钮 **「焦点 / 小屏」** → 可滚动演示页。纵向按钮与 12 个可点击列表行可遍历,
+sample: **「工具」→「焦点 / 小屏」** → 可滚动演示页。纵向按钮与 12 个可点击列表行可遍历,
 禁用按钮 / 只读行用于对照。标签模式按钮轮换三策略,高度按钮切换 56 / 48dp,
 同时更新真实 shell 底栏和三种可操作的内联预览(内联预览 `autoReserveBottomStack = false`)。
 页面提供返回首页按钮与 BackHandler;列表使用 bottomOverlayPadding,末行可滚出底栏覆盖区。
 
 ## 构建
+
+Windows 本机同时用于日常工作，构建与模拟器只串行运行。重任务通过
+`python tools/run_limited.py --log <日志路径> -- <可执行命令>` 启动；启动器使用 Windows
+Job Object 将整个进程树硬限制为 2 个逻辑核、默认低优先级，退出即回收子进程。
+若低优先级持续饥饿，可加 `--priority normal`；两核上限不变，模拟器验收后立即关闭。
+Gradle 命令使用 `cmd.exe /d /c gradlew.bat`，追加
+`--max-workers=2 --no-parallel --no-daemon -Pkotlin.compiler.execution.strategy=in-process`，
+避免复用限额外的编译守护进程。日志路径应保存在工作台证据目录，模拟器始终使用独立端口。
+从 PowerShell 传入带点的 `-P` 参数时应引用整个参数；也可把构建命令写入 `.cmd` 再由启动器调用。
 
 ```bash
 ./gradlew :sample:assembleDebug       # 演示 app

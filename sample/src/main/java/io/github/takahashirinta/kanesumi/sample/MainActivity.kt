@@ -1,6 +1,8 @@
 package io.github.takahashirinta.kanesumi.sample
 
 import android.os.Bundle
+import androidx.activity.SystemBarStyle
+import androidx.activity.compose.BackHandler
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -8,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -22,22 +25,24 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -46,6 +51,12 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import io.github.takahashirinta.kanesumi.core.theme.MetroColors
+import io.github.takahashirinta.kanesumi.core.insets.metroStatusBarsPadding
+import io.github.takahashirinta.kanesumi.structure.sidebar.MetroSidebar
+import io.github.takahashirinta.kanesumi.structure.sidebar.MetroSidebarItem
 import io.github.takahashirinta.kanesumi.controls.MetroBottomSheet
 import io.github.takahashirinta.kanesumi.controls.MetroButton
 import io.github.takahashirinta.kanesumi.controls.MetroDialog
@@ -60,8 +71,6 @@ import io.github.takahashirinta.kanesumi.controls.MetroProgressIndicator
 import io.github.takahashirinta.kanesumi.controls.MetroResponsiveContent
 import io.github.takahashirinta.kanesumi.controls.MetroSurface
 import io.github.takahashirinta.kanesumi.controls.MetroSwitch
-import io.github.takahashirinta.kanesumi.controls.MetroTabItem
-import io.github.takahashirinta.kanesumi.controls.MetroTabRow
 import io.github.takahashirinta.kanesumi.core.insets.LocalMetroBottomStack
 import io.github.takahashirinta.kanesumi.core.insets.MetroInsets
 import io.github.takahashirinta.kanesumi.core.insets.bottomOverlayPadding
@@ -86,35 +95,31 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MetroTheme {
-                SampleRoot()
+            var dark by rememberSaveable { mutableStateOf(false) }
+            MetroTheme(colors = if (dark) MetroColors.dark() else MetroColors.light()) {
+                SampleRoot(dark = dark, onToggleTheme = { dark = !dark })
             }
         }
     }
 }
 
-private val DemoMiniBar = Color(0xFF2E67B5)
-private val DemoCoverA = Color(0xFF6B4E9E)
-private val DemoCoverB = Color(0xFFB57332)
-private val DemoCoverC = Color(0xFF3E7C51)
-
-private val NavItems = listOf(
-    MetroBottomNavItem(Icons.Filled.Home, "home"),
-    MetroBottomNavItem(Icons.Filled.Search, "search"),
-    MetroBottomNavItem(Icons.Filled.Star, "star"),
-    MetroBottomNavItem(Icons.Filled.Settings, "settings"),
+@Composable
+private fun galleryNavigation() = listOf(
+    MetroBottomNavItem(Icons.Filled.Home, stringResource(R.string.nav_overview)),
+    MetroBottomNavItem(Icons.Filled.Settings, stringResource(R.string.nav_controls)),
+    MetroBottomNavItem(Icons.Filled.Star, stringResource(R.string.nav_layout)),
+    MetroBottomNavItem(Icons.Filled.Search, stringResource(R.string.nav_tools)),
 )
 
-private data class DemoDetail(val title: String, val subtitle: String, val cover: Color)
-
-private val DemoDetails = listOf(
-    DemoDetail("Album Alpha", "Artist One · 2024 · 12 tracks", DemoCoverA),
-    DemoDetail("Album Beta", "Artist Two · 2023 · 9 tracks", DemoCoverB),
-    DemoDetail("Album Gamma", "Artist Three · 2025 · 15 tracks", DemoCoverC),
-)
+private data class DemoDetail(val title: String, val subtitle: String, val artwork: Int)
 
 @Composable
-private fun SampleRoot() {
+private fun galleryDetails() = List(3) { index ->
+    DemoDetail(artTitle(index), stringResource(R.string.collection_subtitle), index)
+}
+
+@Composable
+private fun SampleRoot(dark: Boolean, onToggleTheme: () -> Unit) {
     var miniBarVisible by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableIntStateOf(0) }
     var openedDetail by remember { mutableStateOf<DemoDetail?>(null) }
@@ -124,190 +129,87 @@ private fun SampleRoot() {
     var focusDemoOpen by remember { mutableStateOf(false) }
     var focusLabelMode by remember { mutableStateOf(MetroBottomNavLabelMode.Always) }
     var focusNavHeight by remember { mutableStateOf(56.dp) }
-
-    if (dialogOpen) {
-        PlayAllStyleDialog(
-            onDismiss = { dialogOpen = false },
+    val items = galleryNavigation()
+    val details = galleryDetails()
+    val colors = LocalMetroColors.current
+    val activity = LocalContext.current as? ComponentActivity
+    val imageVisible = openedDetail != null
+    SideEffect {
+        val transparent = android.graphics.Color.TRANSPARENT
+        activity?.enableEdgeToEdge(
+            statusBarStyle = if (dark || imageVisible) SystemBarStyle.dark(transparent)
+                else SystemBarStyle.light(transparent, transparent),
+            navigationBarStyle = if (dark) SystemBarStyle.dark(transparent)
+                else SystemBarStyle.light(transparent, transparent),
         )
     }
-    if (sheetOpen) {
-        SongMenuSheetStyleDemo(onDismiss = { sheetOpen = false })
-    }
-
-    MetroShell(
-        bottomBar = {
-            Column {
-                if (miniBarVisible) OverlayBar(label = "mini player (56dp)", tint = DemoMiniBar)
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(LocalMetroColors.current.surface)
-                        .metroNavigationBarsPadding(),
-                ) {
-                    MetroBottomNav(
-                        items = NavItems,
-                        selectedIndex = selectedTab,
-                        onSelected = { selectedTab = it },
-                        labelMode = if (focusDemoOpen) focusLabelMode else MetroBottomNavLabelMode.Always,
-                        heightDp = if (focusDemoOpen) focusNavHeight else 56.dp,
-                    )
-                }
-            }
-        },
-    ) {
-        if (lyricsOpen) {
-            LyricsDemo(onBack = { lyricsOpen = false })
-        } else {
-            if (miniBarVisible) {
-                rememberBottomStackReservation(key = "sample.miniPlayer", heightDp = 56.dp)
-            }
-
-            MetroResponsiveContent {
-                val current = openedDetail
-                if (focusDemoOpen) {
-                    FocusSmallScreenDemo(
-                        items = NavItems,
-                        labelMode = focusLabelMode,
-                        heightDp = focusNavHeight,
-                        onLabelModeChange = { focusLabelMode = it },
-                        onHeightChange = { focusNavHeight = it },
-                        onBack = { focusDemoOpen = false },
-                    )
-                } else if (current != null) {
-                    DetailDemo(detail = current, onBack = { openedDetail = null })
-                } else {
-                    HomeDemo(
-                        miniBarVisible = miniBarVisible,
-                        onToggleMiniBar = { miniBarVisible = !miniBarVisible },
-                        onOpenDetail = { openedDetail = it },
-                        onOpenDialog = { dialogOpen = true },
-                        onOpenSheet = { sheetOpen = true },
-                        onOpenLyrics = { lyricsOpen = true },
-                        onOpenFocusDemo = { focusDemoOpen = true },
-                    )
-                }
-            }
+    BackHandler(enabled = sheetOpen || lyricsOpen || focusDemoOpen || openedDetail != null) {
+        when {
+            sheetOpen -> sheetOpen = false
+            lyricsOpen -> lyricsOpen = false
+            focusDemoOpen -> focusDemoOpen = false
+            else -> openedDetail = null
         }
     }
-}
-
-@Composable
-private fun HomeDemo(
-    miniBarVisible: Boolean,
-    onToggleMiniBar: () -> Unit,
-    onOpenDetail: (DemoDetail) -> Unit,
-    onOpenDialog: () -> Unit,
-    onOpenSheet: () -> Unit,
-    onOpenLyrics: () -> Unit,
-    onOpenFocusDemo: () -> Unit,
-) {
-    val insets = rememberMetroInsets()
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = bottomOverlayPadding(),
-    ) {
-        item {
-            MetroAppBar(
-                title = "Kanesumi · demo",
-                actions = {
-                    MetroIcon(
-                        imageVector = Icons.Filled.Settings,
-                        contentDescription = "settings",
-                        tint = LocalMetroColors.current.onSurfaceVariant,
-                        sizeDp = 22.dp,
-                    )
-                },
-            )
-        }
-        item {
-            MetroButton(
-                text = "焦点 / 小屏",
-                onClick = onOpenFocusDemo,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-            )
-        }
-        item { DebugPanel(insets = insets) }
-        item { Spacer(Modifier.height(8.dp)) }
-        item {
-            MetroButton(
-                text = if (miniBarVisible) "Hide mini player" else "Show mini player",
-                onClick = onToggleMiniBar,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                leadingIcon = Icons.Filled.Star,
-            )
-        }
-        item { Spacer(Modifier.height(8.dp)) }
-        item {
-            MetroButton(
-                text = "Lyrics demo (Apple Music × Metro)",
-                onClick = onOpenLyrics,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-            )
-        }
-        item { Spacer(Modifier.height(8.dp)) }
-        item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                MetroButton(
-                    text = "Open dialog",
-                    onClick = onOpenDialog,
-                    modifier = Modifier.weight(1f),
+    val select: (Int) -> Unit = {
+        selectedTab = it; openedDetail = null; lyricsOpen = false; focusDemoOpen = false
+    }
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val wide = maxWidth >= 600.dp
+        MetroShell(bottomBar = {
+            Column(Modifier.background(colors.surface).metroNavigationBarsPadding()) {
+                if (miniBarVisible) OverlayBar(stringResource(R.string.mini_player), colors.surface)
+                if (!wide) MetroBottomNav(items, selectedTab, select,
+                    labelMode = if (focusDemoOpen) focusLabelMode else MetroBottomNavLabelMode.Always,
+                    heightDp = if (focusDemoOpen) focusNavHeight else 56.dp)
+            }
+        }) {
+            val insets = rememberMetroInsets()
+            rememberBottomStackReservation("sample.systemNav", insets.navigationBar.dp)
+            if (miniBarVisible) rememberBottomStackReservation("sample.miniPlayer", 56.dp)
+            Row(Modifier.fillMaxSize()) {
+                if (wide) MetroSidebar(
+                    items.map { MetroSidebarItem(it.icon, it.label) }, selectedTab, select,
+                    modifier = Modifier.metroStatusBarsPadding(), width = 200.dp,
+                    header = { MetroText(stringResource(R.string.app_name),
+                        modifier = Modifier.padding(16.dp), style = LocalMetroTypography.current.title) },
                 )
-                MetroButton(
-                    text = "Open sheet",
-                    onClick = onOpenSheet,
-                    modifier = Modifier.weight(1f),
-                    containerColor = LocalMetroColors.current.surfaceVariant,
-                    contentColor = LocalMetroColors.current.onSurface,
-                )
-                Box(
-                    modifier = Modifier
-                        .background(LocalMetroColors.current.surfaceVariant)
-                        .padding(16.dp),
-                ) {
-                    MetroProgressIndicator()
+                Box(Modifier.weight(1f)) {
+                    if (lyricsOpen) LyricsDemo(onBack = { lyricsOpen = false })
+                    else if (openedDetail != null) MetroResponsiveContent(maxWidthDp = if (wide) 640.dp else Dp.Unspecified) {
+                        DetailDemo(openedDetail!!, onBack = { openedDetail = null })
+                    }
+                    else if (focusDemoOpen) MetroResponsiveContent(Modifier.metroStatusBarsPadding()) {
+                        FocusSmallScreenDemo(items, focusLabelMode, focusNavHeight,
+                            { focusLabelMode = it }, { focusNavHeight = it }, { focusDemoOpen = false })
+                    }
+                    else MetroResponsiveContent(modifier = Modifier.metroStatusBarsPadding(),
+                        maxWidthDp = if (wide && (selectedTab == 1 || selectedTab == 3)) 640.dp else Dp.Unspecified) {
+                        val header: @Composable () -> Unit = {
+                            MetroAppBar(applyStatusBarsPadding = false,
+                                title = if (selectedTab == 0) stringResource(R.string.gallery_title)
+                                else items[selectedTab].label,
+                                actions = { MetroButton(stringResource(if (dark) R.string.theme_light else R.string.theme_dark),
+                                    onToggleTheme, kind = io.github.takahashirinta.kanesumi.controls.MetroButtonKind.Text) })
+                        }
+                        when (selectedTab) {
+                            0 -> GalleryOverview(header) { openedDetail = details[it] }
+                            1 -> GalleryControls(header, { dialogOpen = true }, { sheetOpen = true })
+                            2 -> GalleryLayouts(header, { openedDetail = details[it] }, { lyricsOpen = true })
+                            else -> GalleryTools(header, miniBarVisible, { miniBarVisible = !miniBarVisible },
+                                { focusDemoOpen = true }, { DebugPanel(insets) })
+                        }
+                    }
                 }
-                OverflowMenuButton()
             }
         }
-        item { Spacer(Modifier.height(16.dp)) }
-        item { FormControlsShowcase() }
-        item { Spacer(Modifier.height(16.dp)) }
-        item {
-            MetroText(
-                text = "Details",
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                style = LocalMetroTypography.current.title,
-            )
+        // 顶栏仍随内容滚动；只遮住系统状态栏区域，避免列表字形与时间/信号重叠。
+        if (!imageVisible) {
+            Box(Modifier.fillMaxWidth().height(rememberMetroInsets().statusBar.dp).background(colors.surface))
         }
-        items(DemoDetails) { detail ->
-            MetroListRow(
-                title = detail.title,
-                subtitle = detail.subtitle,
-                leading = {
-                    Box(
-                        Modifier
-                            .size(48.dp)
-                            .background(detail.cover)
-                    )
-                },
-                onClick = { onOpenDetail(detail) },
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
-            )
-        }
-        item { Spacer(Modifier.height(16.dp)) }
-        items(60) { idx ->
-            SimpleRow(index = idx)
-        }
+        // 同窗口弹层必须在不透明 Shell 之后绘制；Dialog 自带独立 Window。
+        if (sheetOpen) SongMenuSheetStyleDemo(onDismiss = { sheetOpen = false })
+        if (dialogOpen) PlayAllStyleDialog(onDismiss = { dialogOpen = false })
     }
 }
 
@@ -315,7 +217,7 @@ private fun HomeDemo(
 private fun DetailDemo(detail: DemoDetail, onBack: () -> Unit) {
     MetroDetailScaffold(
         onBack = onBack,
-        backIcon = Icons.Filled.ArrowBack,
+        backIcon = Icons.AutoMirrored.Filled.ArrowBack,
         header = { DetailHeader(detail) },
         content = { detailBody() },
     )
@@ -332,7 +234,7 @@ private fun PlayAllStyleDialog(onDismiss: () -> Unit) {
                 .padding(horizontal = 20.dp, vertical = 14.dp),
         ) {
             MetroText(
-                text = "Choose how to play",
+                text = stringResource(R.string.dialog_title),
                 color = colors.onSurfaceVariant,
                 style = typography.caption,
             )
@@ -341,16 +243,16 @@ private fun PlayAllStyleDialog(onDismiss: () -> Unit) {
         DialogRow(
             icon = Icons.Filled.PlayArrow,
             iconTint = colors.primary,
-            title = "Play now",
-            subtitle = "Replace queue with these songs",
+            title = stringResource(R.string.play_now),
+            subtitle = stringResource(R.string.replace_queue),
             onClick = onDismiss,
         )
         MetroDivider()
         DialogRow(
             icon = Icons.Filled.Star,
             iconTint = colors.onSurface,
-            title = "Insert next",
-            subtitle = "Add right after the current song",
+            title = stringResource(R.string.play_next),
+            subtitle = stringResource(R.string.insert_next),
             onClick = onDismiss,
         )
         MetroDivider()
@@ -362,7 +264,7 @@ private fun PlayAllStyleDialog(onDismiss: () -> Unit) {
             contentAlignment = Alignment.Center,
         ) {
             MetroText(
-                text = "Cancel",
+                text = stringResource(R.string.action_cancel),
                 color = colors.onSurfaceVariant,
                 style = typography.body,
             )
@@ -371,65 +273,10 @@ private fun PlayAllStyleDialog(onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun FormControlsShowcase() {
-    val colors = LocalMetroColors.current
-    val typography = LocalMetroTypography.current
-    var selectedTab by remember { mutableIntStateOf(0) }
-    var autoPlay by remember { mutableStateOf(false) }
-
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-        MetroTabRow(
-            items = listOf(
-                MetroTabItem("All"),
-                MetroTabItem("Albums"),
-                MetroTabItem("Songs"),
-            ),
-            selectedTabIndex = selectedTab,
-            onTabSelected = { selectedTab = it },
-        )
-        Spacer(Modifier.height(12.dp))
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                MetroText(text = "Auto-play", color = colors.onSurface, style = typography.body)
-                MetroText(
-                    text = "Start playing when tapped",
-                    color = colors.onSurfaceVariant,
-                    style = typography.caption,
-                )
-            }
-            MetroSwitch(checked = autoPlay, onCheckedChange = { autoPlay = it })
-        }
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                MetroText(text = "Icon buttons", color = colors.onSurface, style = typography.body)
-            }
-            MetroIconButton(onClick = {}) {
-                MetroIcon(Icons.Filled.Star, "star", tint = colors.onSurface, sizeDp = 22.dp)
-            }
-            MetroIconButton(onClick = {}) {
-                MetroIcon(Icons.Filled.Settings, "settings", tint = colors.onSurface, sizeDp = 22.dp)
-            }
-        }
-    }
-}
-
-@Composable
 private fun SongMenuSheetStyleDemo(onDismiss: () -> Unit) {
     val colors = LocalMetroColors.current
     val typography = LocalMetroTypography.current
-    val song = remember {
-        DemoDetail("Album Alpha", "Artist One · 2024 · 12 tracks", DemoCoverA)
-    }
+    val song = galleryDetails().first()
     MetroBottomSheet(
         onDismiss = onDismiss,
         applyNavigationBarsPadding = true,
@@ -440,11 +287,7 @@ private fun SongMenuSheetStyleDemo(onDismiss: () -> Unit) {
                     .height(112.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Box(
-                    Modifier
-                        .size(112.dp)
-                        .background(song.cover)
-                )
+                GalleryArtwork(song.artwork, Modifier.size(112.dp))
                 Column(
                     modifier = Modifier
                         .fillMaxHeight()
@@ -468,11 +311,11 @@ private fun SongMenuSheetStyleDemo(onDismiss: () -> Unit) {
         },
     ) {
         MetroDivider()
-        SheetAction(Icons.Filled.PlayArrow, "Play next", colors.primary, onDismiss)
+        SheetAction(Icons.Filled.PlayArrow, stringResource(R.string.play_next), colors.primary, onDismiss)
         MetroDivider()
-        SheetAction(Icons.Filled.Star, "Add to library", colors.onSurface, onDismiss)
+        SheetAction(Icons.Filled.Star, stringResource(R.string.add_library), colors.onSurface, onDismiss)
         MetroDivider()
-        SheetAction(Icons.Filled.Settings, "Share", colors.onSurface, onDismiss)
+        SheetAction(Icons.Filled.Settings, stringResource(R.string.share), colors.onSurface, onDismiss)
     }
 }
 
@@ -498,7 +341,7 @@ private fun SheetAction(
 }
 
 @Composable
-private fun OverflowMenuButton() {
+internal fun OverflowMenuButton() {
     var expanded by remember { mutableStateOf(false) }
     val colors = LocalMetroColors.current
     Box {
@@ -510,8 +353,8 @@ private fun OverflowMenuButton() {
             contentAlignment = Alignment.Center,
         ) {
             MetroIcon(
-                imageVector = Icons.Filled.Settings,
-                contentDescription = "overflow",
+                imageVector = Icons.Filled.MoreVert,
+                contentDescription = stringResource(R.string.more_actions),
                 tint = colors.onSurface,
                 sizeDp = 22.dp,
             )
@@ -521,19 +364,19 @@ private fun OverflowMenuButton() {
             onDismissRequest = { expanded = false },
         ) {
             MetroDropdownMenuItem(
-                text = "Play next",
+                text = stringResource(R.string.play_next),
                 onClick = { expanded = false },
                 leading = { MetroIcon(Icons.Filled.PlayArrow, null, tint = colors.primary, sizeDp = 20.dp) },
             )
             MetroDivider()
             MetroDropdownMenuItem(
-                text = "Add to library",
+                text = stringResource(R.string.add_library),
                 onClick = { expanded = false },
                 leading = { MetroIcon(Icons.Filled.Star, null, tint = colors.onSurface, sizeDp = 20.dp) },
             )
             MetroDivider()
             MetroDropdownMenuItem(
-                text = "Share",
+                text = stringResource(R.string.share),
                 enabled = false,
                 onClick = { expanded = false },
             )
@@ -575,12 +418,7 @@ private fun DetailHeader(detail: DemoDetail) {
     val colors = LocalMetroColors.current
     val typography = LocalMetroTypography.current
     Column(modifier = Modifier.fillMaxWidth()) {
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .aspectRatio(1f)
-                .background(detail.cover)
-        )
+        GalleryArtwork(detail.artwork, Modifier.fillMaxWidth().aspectRatio(1f))
         Spacer(Modifier.height(20.dp))
         Column(modifier = Modifier.padding(horizontal = 16.dp)) {
             MetroText(text = detail.title, color = colors.onBackground, style = typography.pageHeading.copy(fontSize = 26.sp))
@@ -594,19 +432,12 @@ private fun DetailHeader(detail: DemoDetail) {
 private fun LazyListScope.detailBody() {
     items(20) { i ->
         MetroListRow(
-            title = "Track ${i + 1}",
-            subtitle = "3:${(15 + i * 7) % 60}",
+            title = stringResource(R.string.track_title, i + 1),
+            subtitle = "3:%02d".format((15 + i * 7) % 60),
             leading = {
                 MetroText(
                     text = "%02d".format(i + 1),
                     modifier = Modifier.padding(start = 16.dp),
-                )
-            },
-            trailing = {
-                MetroIcon(
-                    imageVector = Icons.Filled.Star,
-                    contentDescription = null,
-                    sizeDp = 20.dp,
                 )
             },
             onClick = {},
@@ -644,7 +475,9 @@ private fun LyricsDemo(onBack: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.background),
+            .background(colors.background)
+            .metroStatusBarsPadding()
+            .padding(bottomOverlayPadding()),
     ) {
         Row(
             modifier = Modifier
@@ -654,26 +487,32 @@ private fun LyricsDemo(onBack: () -> Unit) {
         ) {
             MetroIconButton(onClick = onBack) {
                 MetroIcon(
-                    imageVector = Icons.Filled.ArrowBack,
-                    contentDescription = "back",
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = stringResource(R.string.back),
                     tint = colors.onSurface,
                     sizeDp = 22.dp,
                 )
             }
             MetroText(
-                text = "Lyrics · timestamp-driven",
+                text = stringResource(R.string.lyrics_title),
                 color = colors.onSurface,
                 style = typography.title,
                 modifier = Modifier.padding(start = 4.dp),
             )
         }
-        MetroLyricsPanel(
-            lines = lyrics,
-            currentPositionMillis = { positionMs },
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
-        )
+        BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp)) {
+            // 参 Ncrust 的高度适配：短视口先收紧字级，保留实际可操作的控制区。
+            val compact = maxHeight < 400.dp
+            MetroLyricsPanel(
+                lines = lyrics,
+                currentPositionMillis = { positionMs },
+                fontSize = if (compact) 24.sp else 32.sp,
+                lineHeight = if (compact) 32.sp else 42.sp,
+                translationFontSize = if (compact) 16.sp else 20.sp,
+                translationLineHeight = if (compact) 21.sp else 26.sp,
+                onLineClick = { positionMs = it },
+            )
+        }
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -681,11 +520,11 @@ private fun LyricsDemo(onBack: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
         ) {
             MetroButton(
-                text = if (playing) "Pause" else "Play",
+                text = stringResource(if (playing) R.string.action_pause else R.string.action_play),
                 onClick = { playing = !playing },
             )
             MetroButton(
-                text = "Restart",
+                text = stringResource(R.string.action_restart),
                 onClick = {
                     positionMs = 0L
                     playing = false
@@ -726,15 +565,6 @@ private fun DebugPanel(insets: MetroInsets) {
             }
         }
     }
-}
-
-@Composable
-private fun SimpleRow(index: Int) {
-    MetroListRow(
-        title = "Row $index",
-        subtitle = "scroll to bottom; last row must clear both bars",
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-    )
 }
 
 @Composable

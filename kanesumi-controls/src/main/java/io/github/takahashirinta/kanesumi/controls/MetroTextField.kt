@@ -29,7 +29,7 @@ import io.github.takahashirinta.kanesumi.core.theme.MetroText
 
 /**
  * Metro 风文本输入框。直角无圆角、无边框、无 M3 outline/filled 语义。
- * 底色 surfaceVariant,placeholder 走 onSurfaceVariant,光标 primary。
+ * 底色 controlFill,placeholder 走 onSurfaceVariant,光标 primary。
  *
  * 取代 M3 TextField / OutlinedTextField:它们带圆角边框 + floating label +
  * 聚集态变色,Kanesumi 不需要。这里是"一个底色的矩形里打字",触摸下只用光标,
@@ -54,7 +54,7 @@ fun MetroTextField(
     visualTransformation: VisualTransformation = VisualTransformation.None,
     textStyle: TextStyle = LocalMetroTypography.current.body,
     contentPadding: PaddingValues = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
-    containerColor: Color = LocalMetroColors.current.surfaceVariant,
+    containerColor: Color = LocalMetroColors.current.controlFill,
     cursorColor: Color = LocalMetroColors.current.primary,
 ) {
     val colors = LocalMetroColors.current

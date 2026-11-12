@@ -54,7 +54,7 @@ import kotlin.math.abs
  *
  * 静态 / 强调(复刻原版):
  *  - 左对齐 32sp 粗体;lineHeight 42sp;行间同字号。
- *  - 颜色离散:当前行 primary、过去行 White@0.6、未来行 Gray@0.4(alpha 烤进颜色,
+ *  - 颜色离散:当前行 primary、过去/未来行由主题次级文字派生(alpha 烤进颜色,
  *    不走 graphicsLayer alpha,与原版一致)。
  *  - 缩放连续:单个 `smoothCurrentIndex: Animatable<Float>` 在跨行时用 QuickSwitch
  *    (180ms FastOutSlowIn,等同原版 tween(180, FastOutSlowInEasing))从旧行号滑到
@@ -95,8 +95,9 @@ fun MetroLyricsPanel(
     // 播放器从折叠态展开/重新唤起需要主动把滚动锚回当前行
     forcedScrollTrigger: Int = 0,
     currentLineColor: Color = LocalMetroColors.current.primary,
-    pastLineColor: Color = Color.White.copy(alpha = 0.6f),
-    futureLineColor: Color = Color.Gray.copy(alpha = 0.4f),
+    pastLineColor: Color = LocalMetroColors.current.onSurfaceVariant,
+    // 浅色实图 0.65 仅 2.88:1，未播放的大字仍需保持可读。
+    futureLineColor: Color = LocalMetroColors.current.onSurfaceVariant.copy(alpha = 0.8f),
     fontSize: TextUnit = 32.sp,
     lineHeight: TextUnit = 42.sp,
     translationFontSize: TextUnit = 20.sp,

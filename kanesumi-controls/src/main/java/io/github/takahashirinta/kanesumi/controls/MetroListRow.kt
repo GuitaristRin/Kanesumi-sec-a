@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
@@ -43,6 +44,8 @@ fun MetroListRow(
     titleStyle: TextStyle = LocalMetroTypography.current.body,
     subtitleStyle: TextStyle = LocalMetroTypography.current.caption,
     contentPadding: PaddingValues = PaddingValues(start = 0.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+    titleMaxLines: Int = 1,
+    subtitleMaxLines: Int = 1,
 ) {
     val base = modifier.fillMaxWidth()
     val withClick = if (onClick != null) base.clickable(onClick = onClick) else base
@@ -56,9 +59,11 @@ fun MetroListRow(
             Spacer(Modifier.width(12.dp))
         }
         Column(modifier = Modifier.weight(1f, fill = true)) {
-            MetroText(text = title, color = titleColor, style = titleStyle)
+            MetroText(text = title, color = titleColor, style = titleStyle,
+                maxLines = titleMaxLines, overflow = TextOverflow.Ellipsis)
             if (subtitle != null) {
-                MetroText(text = subtitle, color = subtitleColor, style = subtitleStyle)
+                MetroText(text = subtitle, color = subtitleColor, style = subtitleStyle,
+                    maxLines = subtitleMaxLines, overflow = TextOverflow.Ellipsis)
             }
         }
         if (trailing != null) {

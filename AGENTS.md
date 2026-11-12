@@ -101,7 +101,7 @@ Body 写 *why*,关键设计决策必须记录原因,让一年后读 git log 不�
 - **小屏底栏**:`MetroBottomNav.labelMode` 默认 `MetroBottomNavLabelMode.Always`(旧行为),
   另有 SelectedOnly / Never;Never + `heightDp=48.dp` 只布局居中的 22dp 图标。
   SelectedOnly 标签用 QuickSwitch 叠 alpha,动画 / 测量 state 只在 graphicsLayer 读。
-  现有指示条 / 颜色动画不变。sample 首页「焦点 / 小屏」可切模式 / 56、48dp 高度;
+  现有指示条 / 颜色动画不变。sample「工具」→「焦点 / 小屏」可切模式 / 56、48dp 高度;
   完整焦点覆盖表与 API 默认值见 README「键盘焦点与小屏底栏」。
 - **注释写 why 不写 what**;参数给出来源(如 SOKUOU_ENGINE.md 的典型值表),中英混合。
 

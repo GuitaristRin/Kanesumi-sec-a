@@ -22,13 +22,19 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.unit.dp
 import io.github.takahashirinta.kanesumi.anim.sokuou.SokuouPresets
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
+import io.github.takahashirinta.kanesumi.core.theme.metroContentColorFor
 import kotlinx.coroutines.launch
 
 /**
@@ -53,8 +59,7 @@ import kotlinx.coroutines.launch
  * 每次翻转/拖拽只 invalidateDraw。动画走 SokuouPresets.ToggleFlip (220ms
  * MetroCubic),与 UWP toggle 时长对齐。
  *
- * thumb 在 progress > 0.5 时翻转为黑色(on 态,在 primary track 上可读),
- * 否则白色(off 态,在深灰 track 上可读)。直角不圆。
+ * thumb 在空轨道上取正文色，强调轨道上取较高对比度的黑/白。几何保持直角。
  */
 @Composable
 fun MetroSwitch(
@@ -62,13 +67,13 @@ fun MetroSwitch(
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     accentColor: Color = LocalMetroColors.current.primary,
-    // off 态轨道：onSurfaceVariant 半透明，深浅色下都是可辨的中性灰。
-    trackOffColor: Color = LocalMetroColors.current.onSurfaceVariant.copy(alpha = 0.45f),
-    borderOffColor: Color = LocalMetroColors.current.divider,
+    // Off 轨道留空，保留与深浅主题对应的强轮廓。
+    trackOffColor: Color = Color.Transparent,
+    borderOffColor: Color = LocalMetroColors.current.onSurfaceVariant,
 ) {
-    // thumb 恒为 onPrimary（浅色主题白、深色主题白），压在 primary/中性灰轨道上都清晰；
-    // 旧实现 on 态写死黑色，浅色主题下就是一块突兀的黑。
-    val thumbColor = LocalMetroColors.current.onPrimary
+    // 空轨道使用正文前景，强调轨道独立取可读前景，避免主题改档后 Off thumb 消失。
+    val offThumbColor = LocalMetroColors.current.onSurface
+    val onThumbColor = metroContentColorFor(accentColor)
     val progress = remember { Animatable(if (checked) 1f else 0f) }
     var isDragging by remember { mutableStateOf(false) }
     val animScope = rememberCoroutineScope()
@@ -87,6 +92,11 @@ fun MetroSwitch(
         modifier = modifier
             .width(52.dp)
             .height(28.dp)
+            .semantics {
+                role = Role.Switch
+                toggleableState = if (checked) ToggleableState.On else ToggleableState.Off
+                onClick { onCheckedChange(!checked); true }
+            }
             .pointerInput(Unit) {
                 // travelPx 用 pointerInput 的 Density 现算,拿到的是 drawBehind 里
                 // 同一套常量 (52 - 3*2 - 22 = 24dp) 的像素值。手指 delta -> progress
@@ -136,17 +146,20 @@ fun MetroSwitch(
             }
             .drawBehind {
                 val p = progress.value
-                val track = lerp(trackOffColor, accentColor, p)
-                val border = lerp(borderOffColor, accentColor, p)
-                drawRect(track)
-                val strokeWidth = 1.dp.toPx()
-                drawRect(color = border, style = Stroke(width = strokeWidth))
+                // 参 Lumia Off：中空轨道；主题前景分档，视觉帧只在 draw 中叠 alpha。
+                drawRect(trackOffColor)
+                val strokeWidth = 2.dp.toPx()
+                drawRect(color = borderOffColor,
+                    topLeft = Offset(strokeWidth / 2f, strokeWidth / 2f),
+                    size = Size(size.width - strokeWidth, size.height - strokeWidth),
+                    style = Stroke(width = strokeWidth))
+                drawRect(accentColor.copy(alpha = accentColor.alpha * p))
                 val padPx = 3.dp.toPx()
                 val thumbW = 22.dp.toPx()
                 val travel = size.width - padPx * 2f - thumbW
                 val thumbX = padPx + travel * p
                 drawRect(
-                    color = thumbColor,
+                    color = if (p >= 0.5f) onThumbColor else offThumbColor,
                     topLeft = Offset(thumbX, padPx),
                     size = Size(thumbW, size.height - padPx * 2f),
                 )

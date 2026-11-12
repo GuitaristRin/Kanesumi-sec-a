@@ -6,13 +6,13 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 
-val LocalMetroColors = staticCompositionLocalOf { MetroColors() }
+val LocalMetroColors = staticCompositionLocalOf { MetroColors.light() }
 
 val LocalMetroTypography = staticCompositionLocalOf { MetroTypography() }
 
 @Composable
 fun MetroTheme(
-    colors: MetroColors = MetroColors(),
+    colors: MetroColors = MetroColors.light(),
     typography: MetroTypography = MetroTypography(),
     content: @Composable () -> Unit,
 ) {
