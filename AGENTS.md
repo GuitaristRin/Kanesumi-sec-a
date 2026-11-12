@@ -25,6 +25,12 @@ Kanesumi(矩隅)—— Kanesumi Design Android UI 库,以直角丈量边缘。�
   用腾讯镜像 `https://mirrors.cloud.tencent.com/gradle/gradle-9.3.1-bin.zip` 手动放入
   `~/.gradle/wrapper/dists/gradle-9.3.1-bin/<hash>/`(Windows 为 `%USERPROFILE%\.gradle\...`)。
 - 修改依赖一律走 `gradle/libs.versions.toml` 版本目录,不在模块里散写版本号。
+- **Windows 日常用机资源上限**：构建、模拟器等重任务必须串行，经
+  `python tools/run_limited.py --log <日志路径> -- <命令>` 启动；整个进程树最多 2 个逻辑核、默认低优先级。
+  若低优先级持续饥饿，可用 `--priority normal`，两核上限不变；模拟器验收后立即关闭。
+  Gradle 另加 `--max-workers=2 --no-parallel --no-daemon -Pkotlin.compiler.execution.strategy=in-process`，
+  防止复用不在限额内的旧 daemon；仅限制 Gradle worker 数挡不住 JADX 等子进程。
+  从 PowerShell 直接传带点的 `-P` 参数时，用引号包住整个参数，或将构建命令写入 `.cmd` 后调用。
 
 ## Commit Convention
 
